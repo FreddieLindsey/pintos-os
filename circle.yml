@@ -1,3 +1,11 @@
 test:
   override:
     - make
+
+deployment:
+  production:
+    branch: master
+    commands:
+      - echo "Deploying to GitLab"
+      # - git remote add gitlab git@gitlab.doc.ic.ac.uk/pintos_--.git TODO
+      # - git push gitlab master
