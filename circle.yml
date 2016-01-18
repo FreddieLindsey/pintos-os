@@ -1,6 +1,6 @@
 test:
   override:
-    - make
+    - make -C src/devices
 
 deployment:
   production:
