@@ -6,5 +6,6 @@ deployment:
   production:
     branch: master
     commands:
+      - make check
       - git remote add gitlab git@gitlab.doc.ic.ac.uk:lab1516_spring/pintos_12.git
       - git push gitlab master
