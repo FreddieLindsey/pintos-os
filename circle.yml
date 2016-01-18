@@ -10,6 +10,7 @@ deployment:
   production:
     branch: master
     commands:
+      - export PATH="$(pwd)/dependences:$PATH"
       - echo "Tests for task 0:\n\n\n\n"
       - make -C src/devices check
       - echo "\n\n\nPUSHING TO GITLAB!\n"
