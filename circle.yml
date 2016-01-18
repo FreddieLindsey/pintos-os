@@ -1,3 +1,7 @@
+dependencies:
+  override:
+    - sudo apt-get install -y time
+
 test:
   override:
     - make -C src/devices
