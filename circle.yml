@@ -4,6 +4,7 @@ dependencies:
 
 test:
   override:
+    - export PATH="$(pwd)/dependences:$PATH"
     - make -C src/devices
 
 deployment:
