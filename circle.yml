@@ -4,11 +4,16 @@ dependencies:
 
 test:
   override:
+    - export PATH="$(pwd)/dependences:$PATH"
     - make -C src/devices
 
 deployment:
   production:
     branch: master
     commands:
+      - export PATH="$(pwd)/dependences:$PATH"
+      - echo "Tests for task 0:\n\n\n\n"
+      - make -C src/devices check
+      - echo "\n\n\nPUSHING TO GITLAB!\n"
       - git remote add gitlab git@gitlab.doc.ic.ac.uk:lab1516_spring/pintos_12.git
       - git push gitlab master
