@@ -1,6 +1,9 @@
 dependencies:
   override:
+    - sudo apt-get update
     - sudo apt-get install -y time
+    - sudo apt-get install -y qemu
+    - ln -sf $(which qemu-system-i386) /home/ubuntu/bin/qemu
 
 test:
   override:
