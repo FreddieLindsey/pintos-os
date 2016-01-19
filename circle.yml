@@ -1,17 +1,18 @@
 dependencies:
   override:
+    - sudo apt-get update
     - sudo apt-get install -y time
+    - sudo apt-get install -y qemu
+    - ln -sf $(which qemu-system-i386) /home/ubuntu/bin/qemu
 
 test:
   override:
-    - export PATH="$(pwd)/dependences:$PATH"
     - make -C src/devices
 
 deployment:
   production:
     branch: master
     commands:
-      - export PATH="$(pwd)/dependences:$PATH"
       - echo "Tests for task 0:\n\n\n\n"
       - make -C src/devices check
       - echo "\n\n\nPUSHING TO GITLAB!\n"
