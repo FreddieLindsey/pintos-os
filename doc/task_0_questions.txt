@@ -1,0 +1,7 @@
+1. git pull inside the directory if the local directory already exists.
+
+Otherwise, git clone url where url is the url of the group's shared repository.
+
+2. Since you do not specify the length of the source string to copy there is a possibility of overflowing the buffer reserved for the output string.
+
+3. 
