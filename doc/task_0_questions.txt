@@ -4,4 +4,9 @@ Otherwise, git clone url where url is the url of the group's shared repository.
 
 2. Since you do not specify the length of the source string to copy there is a possibility of overflowing the buffer reserved for the output string.
 
-3. 
+3. The default length of a time slice in ticks is 4 as defined in thread.c. In seconds it is 4 * 1/100 = 0.04 seconds.
+
+6. In order to print a 64 bit integer the library inttypes.h must be included. In this library is the macro PRId64 which can be used with the function printf. For example
+	printf("%" PRId64, i) prints the value of i where i is a 64 bit integer.
+
+7 
