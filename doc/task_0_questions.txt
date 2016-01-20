@@ -6,7 +6,18 @@ Otherwise, git clone url where url is the url of the group's shared repository.
 
 3. The default length of a time slice in ticks is 4 as defined in thread.c. In seconds it is 4 * 1/100 = 0.04 seconds.
 
+5. Reproducibility is the property where the same results are produced by running the same program in the same context. Given that every run of Pintos is not necessarily deterministic this means that it does not have reproducibility. This makes debugging more difficult as it is harder to work on a specific error as you cannot guarantee that it will be reproduced.
+
 6. In order to print a 64 bit integer the library inttypes.h must be included. In this library is the macro PRId64 which can be used with the function printf. For example
 	printf("%" PRId64, i) prints the value of i where i is a 64 bit integer.
 
-7 
+7. sema_init is equivalent to lock_init as is sema_down to lock_acquire, sema_up to lock_release as well as sema_try_down and lock_try_acquire. The lock itself also includes a binary semaphore so they also have the list data structure in common (a list of waiters).
+
+The extra property that locks have is that once it is acquired, only the thread that acquired it can then release it.  
+
+8. The maximum size for the entire thread is 4kB. However, the maximum size of just the thread struct should be well below 1kB otherwise there won't be enough room for the kernel stack. This relates to stack overflow as if the kernel stack becomes too large it overflows into the thread struct as the stack grows downwards. Pintos identifies stack overflow when the value magic in the struct is not the default value. This is because the magic value is the first value to be overwritten when there is a kernel stack overflow.
+
+9. Errors are stored in tests/devices/alarm-single.errors
+   The output is stored in tests/devices/alarm-multiple.output
+
+
