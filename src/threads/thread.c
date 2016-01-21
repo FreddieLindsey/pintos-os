@@ -228,8 +228,8 @@ thread_block (void)
 {
   ASSERT (!intr_context ());
   ASSERT (intr_get_level () == INTR_OFF);
-  list_push_back(&sleeping_list, thread_current());
-  thread_current ()->status = THREAD_BLOCKED;
+  list_push_back (&sleeping_list, &(thread_current()->elem));
+  thread_current ()->status = THREAD_BLOCKED; 
   schedule ();
 }
 
@@ -348,8 +348,6 @@ void
 thread_notify_all(int64_t ticks)
 {
   struct list_elem *e;
-
-  ASSERT (intr_get_level () == INTR_OFF);
 
   for (e = list_begin (&sleeping_list); e != list_end (&sleeping_list);
        e = list_next (e))
