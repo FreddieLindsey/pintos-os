@@ -7,3 +7,5 @@ This is a list of coding conventions followed by the members of the group during
 
   `int *a, *b, c;`
   
+- When declaring any variable other than primitives use malloc even if they are only used in the current scope.
+  
