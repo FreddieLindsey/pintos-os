@@ -90,10 +90,14 @@ void
 timer_sleep (int64_t ticks) 
 {
   int64_t start = timer_ticks ();
+  int64_t sleep_until = start + ticks;
 
-  ASSERT (intr_get_level () == INTR_ON);
-  while (timer_elapsed (start) < ticks) 
-    thread_yield ();
+  /* Assign current threads earliest time to earliest_time */
+  thread_current() -> sleep_until = sleep_until;
+ 
+  /* acquire_lock and then add to list. Check list and awaken sleeping threads */
+  thread_block();
+
 }
 
 /* Sleeps for approximately MS milliseconds.  Interrupts must be
