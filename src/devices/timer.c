@@ -92,11 +92,17 @@ timer_sleep (int64_t ticks)
   int64_t start = timer_ticks ();
   int64_t sleep_until = start + ticks;
 
-  /* Assign current threads earliest time to earliest_time */
+  /* Assign current threads earliest time to earliest_time */ 
   thread_current() -> sleep_until = sleep_until;
  
   /* acquire_lock and then add to list. Check list and awaken sleeping threads */
+  struct lock list_lock;
+  lock_init (&list_lock);
+
+  lock_acquire(&list_lock);
   thread_block();
+  thread_notify_all(timer_ticks());
+  lock_release(&list_lock);
 
 }
 

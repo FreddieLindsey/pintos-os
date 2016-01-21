@@ -344,6 +344,23 @@ thread_foreach (thread_action_func *func, void *aux)
     }
 }
 
+void
+thread_notify_all(int64_t ticks)
+{
+  struct list_elem *e;
+
+  ASSERT (intr_get_level () == INTR_OFF);
+
+  for (e = list_begin (&sleeping_list); e != list_end (&sleeping_list);
+       e = list_next (e))
+    {
+      struct thread *t = list_entry(e, struct thread, allelem);
+      if (t->sleep_until <= ticks) {
+        thread_unblock(t);
+        list_remove(e);
+      } 
+    }
+}
 /* Sets the current thread's priority to NEW_PRIORITY. */
 void
 thread_set_priority (int new_priority) 
