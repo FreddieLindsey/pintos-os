@@ -24,10 +24,6 @@
    that are ready to run but not actually running. */
 static struct list ready_list;
 
-/* List of processes in THREAD_BLOCKED state, that is, processes
-   that are waiting their earlier waking time*/
-static struct list sleeping_list;
-
 /* List of all processes.  Processes are added to this list
    when they are first scheduled and removed when they exit. */
 static struct list all_list;
@@ -95,7 +91,6 @@ thread_init (void)
 
   lock_init (&tid_lock);
   list_init (&ready_list);
-  list_init (&sleeping_list);
   list_init (&all_list);
 
   /* Set up a thread structure for the running thread. */
@@ -228,7 +223,6 @@ thread_block (void)
 {
   ASSERT (!intr_context ());
   ASSERT (intr_get_level () == INTR_OFF);
-  list_push_back (&sleeping_list, &(thread_current()->elem));
   thread_current ()->status = THREAD_BLOCKED; 
   schedule ();
 }
@@ -344,21 +338,6 @@ thread_foreach (thread_action_func *func, void *aux)
     }
 }
 
-void
-thread_notify_all(int64_t ticks)
-{
-  struct list_elem *e;
-
-  for (e = list_begin (&sleeping_list); e != list_end (&sleeping_list);
-       e = list_next (e))
-    {
-      struct thread *t = list_entry(e, struct thread, allelem);
-      if (t->sleep_until <= ticks) {
-        thread_unblock(t);
-        list_remove(e);
-      } 
-    }
-}
 /* Sets the current thread's priority to NEW_PRIORITY. */
 void
 thread_set_priority (int new_priority) 
