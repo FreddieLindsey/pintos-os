@@ -1,0 +1,18 @@
+dependencies:
+  override:
+    - sudo apt-get update
+    - sudo apt-get install -y time
+    - sudo apt-get install -y qemu
+    - ln -sf $(which qemu-system-i386) /home/ubuntu/bin/qemu
+
+test:
+  override:
+    - make -C src/devices
+
+deployment:
+  production:
+    branch: master
+    commands:
+      - make -C src/devices check
+      - git remote add gitlab git@gitlab.doc.ic.ac.uk:lab1516_spring/pintos_12.git
+      - git push gitlab master
