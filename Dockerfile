@@ -10,3 +10,6 @@ RUN apt-get install -y qemu
 
 # Link the version of qemu we want to default to
 RUN ln -sf $(which qemu-system-i386) /usr/bin/qemu
+
+# Install git for deployment purposes
+RUN apt-get install -y git

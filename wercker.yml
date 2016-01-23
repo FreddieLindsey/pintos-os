@@ -3,6 +3,6 @@ box: freddielindsey/pintos
 build:
   steps:
     - script:
-      name: echo
+      name: Testing src/devices
       code: |
-        echo "Got box!"
+        make -C src/devices
