@@ -15,6 +15,9 @@ deploy:
         make -C src/devices check
     - script:
       name: Code checked successfully!
+    - add-ssh-key:
+      keyname: gitlab-pintos
+      host: gitlab.doc.ic.ac.uk
     - script:
       name: Pushing to gitlab
       code: |
