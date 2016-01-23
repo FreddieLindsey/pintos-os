@@ -1,5 +1,5 @@
 # Pintos
-Build status: [![Circle CI](https://circleci.com/gh/FreddieShoreditch/pintos_os.svg?style=svg&circle-token=df2f68306ca29d09595be7dbd01e537557bf87fd)](https://circleci.com/gh/FreddieShoreditch/pintos_os)
+[![wercker status](https://app.wercker.com/status/4a46f89a31f7efcf05306928f28d9ef6/m "wercker status")](https://app.wercker.com/project/bykey/4a46f89a31f7efcf05306928f28d9ef6)
 
 An implementation of an operating system in C
 
