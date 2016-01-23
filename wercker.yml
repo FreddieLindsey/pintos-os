@@ -2,5 +2,7 @@ box: freddielindsey/pintos
 
 build:
   steps:
-    - script
+    - script:
       name: echo
+      code: |
+        echo "Got box!"
