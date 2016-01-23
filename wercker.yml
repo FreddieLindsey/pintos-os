@@ -43,3 +43,7 @@ deploy:
       code: |
         git remote add gitlab git@gitlab-pintos:lab1516_spring/pintos_12.git
         git push gitlab master
+  after-steps:
+    - slack-notifier:
+      url: $SLACK_URL
+      username: wercker deployment
