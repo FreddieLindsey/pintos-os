@@ -15,11 +15,12 @@ deploy:
         make -C src/devices check
     - script:
       name: Code checked successfully!
-    - add-ssh-key:
-      keyname: gitlab-pintos
-      host: gitlab.doc.ic.ac.uk
+    - script:
+      name: Get Gitlab key
+      code: |
+        echo $GITLAB_KEY_PRIVATE > private.key
     - script:
       name: Pushing to gitlab
       code: |
         git remote add gitlab git@gitlab.doc.ic.ac.uk:lab1516_spring/pintos_12.git
-        git push gitlab master
+        git push -i private.key gitlab master
