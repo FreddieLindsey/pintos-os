@@ -1,0 +1,41 @@
+box: freddielindsey/pintos
+
+build:
+  steps:
+    - script:
+      name: Testing src/devices
+      code: |
+        make -C src/devices
+
+deploy:
+  steps:
+    - script:
+      name: Checking src/devices
+      code: |
+        make -C src/devices check
+    - script:
+      name: Code checked successfully!
+    - add-to-known_hosts:
+        hostname: gitlab.doc.ic.ac.uk
+    - mktemp:
+      envvar: PRIVATEKEY_PATH
+    - create-file:
+      name: write key
+      filename: $PRIVATEKEY_PATH
+      content: $GITLAB_KEY_PRIVATE
+      overwrite: true
+      hide-from-log: true
+    - script:
+      name: Create Identity File
+      code: |
+        echo -e "\nHost gitlab-pintos" >> $HOME/.ssh/config
+        echo -e "\tHostname gitlab.doc.ic.ac.uk" >> $HOME/.ssh/config
+        echo -e "\tIdentityFile $PRIVATEKEY_PATH" >> $HOME/.ssh/config
+        echo -e "\tUser fl1414" >> $HOME/.ssh/config
+        echo -e "\n\nCONFIG:"
+        cat $HOME/.ssh/config
+    - script:
+      name: Pushing to gitlab
+      code: |
+        git remote add gitlab git@gitlab-pintos:lab1516_spring/pintos_12.git
+        git push gitlab master
