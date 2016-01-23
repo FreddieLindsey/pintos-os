@@ -5,7 +5,7 @@ build:
     - script:
       name: Testing src/devices
       code: |
-        make -C project/src/devices
+        make -C src/devices
 
 deploy:
   steps:
