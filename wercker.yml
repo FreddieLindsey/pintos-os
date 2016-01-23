@@ -6,3 +6,17 @@ build:
       name: Testing src/devices
       code: |
         make -C src/devices
+
+deploy:
+  steps:
+    - script:
+      name: Checking src/devices
+      code: |
+        make -C src/devices check
+    - script:
+      name: Code checked successfully!
+    - script:
+      name: Pushing to gitlab
+      code: |
+        git remote add gitlab git@gitlab.doc.ic.ac.uk:lab1516_spring/pintos_12.git
+        git push gitlab master
