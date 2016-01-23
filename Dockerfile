@@ -14,8 +14,9 @@ RUN apt-get install -y gcc
 RUN apt-get install -y time
 RUN apt-get install -y qemu
 
-# Install git for deployment purposes
+# Install for deployment purposes
 RUN apt-get install -y git
+RUN apt-get install -y curl
 
 # Link the version of qemu we want to default to
 RUN ln -sf $(which qemu-system-i386) /usr/bin/qemu
