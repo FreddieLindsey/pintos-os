@@ -3,7 +3,8 @@
 
 #include <round.h>
 #include <stdint.h>
-
+#include <stdbool.h>
+#include <list.h>
 /* Number of timer interrupts per second. */
 #define TIMER_FREQ 100
 
@@ -15,6 +16,8 @@ int64_t timer_elapsed (int64_t);
 
 /* Sleep and yield the CPU to other threads. */
 void timer_sleep (int64_t ticks);
+bool less(const struct list_elem* cur, const struct list_elem* next, void* aux);
+void notify_all(void);
 void timer_msleep (int64_t milliseconds);
 void timer_usleep (int64_t microseconds);
 void timer_nsleep (int64_t nanoseconds);

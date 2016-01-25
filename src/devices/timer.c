@@ -24,6 +24,11 @@ static int64_t ticks;
    Initialized by timer_calibrate(). */
 static unsigned loops_per_tick;
 
+/*List of processes in THREAD_BLOCKED state, that is, processes
+that are waiting their earlier waking time*/
+static struct list sleeping_list;
+
+
 static intr_handler_func timer_interrupt;
 static bool too_many_loops (unsigned loops);
 static void busy_wait (int64_t loops);
@@ -37,6 +42,7 @@ timer_init (void)
 {
   pit_configure_channel (0, 2, TIMER_FREQ);
   intr_register_ext (0x20, timer_interrupt, "8254 Timer");
+  list_init(&sleeping_list);
 }
 
 /* Calibrates loops_per_tick, used to implement brief delays. */
@@ -48,7 +54,7 @@ timer_calibrate (void)
   ASSERT (intr_get_level () == INTR_ON);
   printf ("Calibrating timer...  ");
 
-  /* Approximate loops_per_tick as the largest power-of-two
+ /* Approximate loops_per_tick as the largest power-of-two
      still less than one timer tick. */
   loops_per_tick = 1u << 10;
   while (!too_many_loops (loops_per_tick << 1)) 
@@ -89,11 +95,36 @@ timer_elapsed (int64_t then)
 void
 timer_sleep (int64_t ticks) 
 {
-  int64_t start = timer_ticks ();
+  
+  int64_t start = timer_ticks();
+  int64_t sleep_until = start + ticks;
+  /* Assign current threads earliest time to earliest_time */
 
-  ASSERT (intr_get_level () == INTR_ON);
-  while (timer_elapsed (start) < ticks) 
-    thread_yield ();
+  thread_current()->sleep_until = sleep_until;
+  list_insert_ordered(&sleeping_list, &thread_current()->sleepelem, (list_less_func*)&less, NULL);
+  sema_down(&thread_current()->sema);
+}
+
+bool less(const struct list_elem* cur, const struct list_elem* next, void* aux) {
+
+  struct thread *threadCur = list_entry(cur, struct thread, sleepelem);
+  struct thread *threadNext = list_entry(next, struct thread, sleepelem);
+  return threadCur->sleep_until < threadNext->sleep_until;
+} 
+
+void notify_all() {
+  struct list_elem *e;
+  enum intr_level old_level = intr_disable();
+
+  if (!list_empty(&sleeping_list)) {
+    while(list_entry(list_begin(&sleeping_list), struct thread, sleepelem)->sleep_until <= timer_ticks() && !list_empty(&sleeping_list)) {
+      e = list_pop_front(&sleeping_list);
+      struct thread *t = list_entry (e, struct thread, sleepelem);
+      sema_up(&t->sema);
+    }
+  }
+
+  intr_set_level (old_level);
 }
 
 /* Sleeps for approximately MS milliseconds.  Interrupts must be
@@ -171,6 +202,7 @@ static void
 timer_interrupt (struct intr_frame *args UNUSED)
 {
   ticks++;
+  notify_all();
   thread_tick ();
 }
 
