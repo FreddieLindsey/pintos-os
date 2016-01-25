@@ -25,9 +25,9 @@ static int64_t ticks;
 static unsigned loops_per_tick;
 
 /* Lock for sleeping_list */
-struct semaphore list_sema;
+static struct semaphore list_sema;
 
-struct lock list_lock;
+static struct lock list_lock;
 
 /*List of processes in THREAD_BLOCKED state, that is, processes
 that are waiting their earlier waking time*/
@@ -48,7 +48,7 @@ timer_init (void)
   pit_configure_channel (0, 2, TIMER_FREQ);
   intr_register_ext (0x20, timer_interrupt, "8254 Timer");
   list_init(&sleeping_list);
-  sema_init(&list_sema, 0);
+  sema_init(&list_sema, 1);
   lock_init(&list_lock);
 }
 
@@ -61,7 +61,7 @@ timer_calibrate (void)
   ASSERT (intr_get_level () == INTR_ON);
   printf ("Calibrating timer...  ");
 
-  /* Approximate loops_per_tick as the largest power-of-two
+ /* Approximate loops_per_tick as the largest power-of-two
      still less than one timer tick. */
   loops_per_tick = 1u << 10;
   while (!too_many_loops (loops_per_tick << 1)) 
@@ -121,16 +121,17 @@ bool less(const struct list_elem* cur, const struct list_elem* next, void* aux) 
 
 void notify_all() {
   struct list_elem *e;
+  enum intr_level old_level = intr_disable();
 
-  lock_acquire(&list_lock);
+  if (!list_empty(&sleeping_list)) {
   while(list_entry(list_begin(&sleeping_list), struct thread, elem)->sleep_until <= timer_ticks()) {
     e = list_pop_front(&sleeping_list);
     struct thread *t = list_entry (e, struct thread, elem);
     sema_up(&t->sema);
   }
+ }
 
-  lock_release(&list_lock);
-
+ intr_set_level (old_level);
 }
 
 /* Sleeps for approximately MS milliseconds.  Interrupts must be
