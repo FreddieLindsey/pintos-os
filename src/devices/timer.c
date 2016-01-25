@@ -101,15 +101,16 @@ timer_sleep (int64_t ticks)
   /* Assign current threads earliest time to earliest_time */
 
   thread_current()->sleep_until = sleep_until;
-    printf("%" PRId64 "\n", thread_current()->sleep_until); 
-  list_insert_ordered(&sleeping_list, &thread_current()->elem, (list_less_func*)&less, NULL);
+  list_push_back(&sleeping_list, &(thread_current()->sleepelem));
+  //list_insert_ordered(&sleeping_list, &thread_current()->elem, (list_less_func*)&less, NULL);
+  printf("%d\n", list_size(&sleeping_list));
   sema_down(&thread_current()->sema);
 }
 
 bool less(const struct list_elem* cur, const struct list_elem* next, void* aux) {
 
-  struct thread *threadCur = list_entry(cur, struct thread, elem);
-  struct thread *threadNext = list_entry(next, struct thread, elem);
+  struct thread *threadCur = list_entry(cur, struct thread, sleepelem);
+  struct thread *threadNext = list_entry(next, struct thread, sleepelem);
   return threadCur->sleep_until < threadNext->sleep_until;
 } 
 
@@ -122,13 +123,15 @@ void notify_all() {
     // Print the list
     struct list_elem *e;
     for (e = list_begin(&sleeping_list); e != list_end(&sleeping_list); e = list_next(e)) {
-      struct thread *t = list_entry(e, struct thread, elem);
+      struct thread *t = list_entry(e, struct thread, sleepelem);
+      printf("%" PRId64 "\n", t->sleep_until);
+      printf("e: %p\n", e);
       // Comment
     }
 
-    while(list_entry(list_begin(&sleeping_list), struct thread, elem)->sleep_until <= timer_ticks()) {
+    while(list_entry(list_begin(&sleeping_list), struct thread, sleepelem)->sleep_until <= timer_ticks()) {
       e = list_pop_front(&sleeping_list);
-      struct thread *t = list_entry (e, struct thread, elem);
+      struct thread *t = list_entry (e, struct thread, sleepelem);
       sema_up(&t->sema);
     }
   }
