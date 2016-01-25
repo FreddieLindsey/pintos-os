@@ -101,9 +101,7 @@ timer_sleep (int64_t ticks)
   /* Assign current threads earliest time to earliest_time */
 
   thread_current()->sleep_until = sleep_until;
-  list_push_back(&sleeping_list, &(thread_current()->sleepelem));
-  //list_insert_ordered(&sleeping_list, &thread_current()->elem, (list_less_func*)&less, NULL);
-  printf("%d\n", list_size(&sleeping_list));
+  list_insert_ordered(&sleeping_list, &thread_current()->sleepelem, (list_less_func*)&less, NULL);
   sema_down(&thread_current()->sema);
 }
 
@@ -119,17 +117,7 @@ void notify_all() {
   enum intr_level old_level = intr_disable();
 
   if (!list_empty(&sleeping_list)) {
-
-    // Print the list
-    struct list_elem *e;
-    for (e = list_begin(&sleeping_list); e != list_end(&sleeping_list); e = list_next(e)) {
-      struct thread *t = list_entry(e, struct thread, sleepelem);
-      printf("%" PRId64 "\n", t->sleep_until);
-      printf("e: %p\n", e);
-      // Comment
-    }
-
-    while(list_entry(list_begin(&sleeping_list), struct thread, sleepelem)->sleep_until <= timer_ticks()) {
+    while(list_entry(list_begin(&sleeping_list), struct thread, sleepelem)->sleep_until <= timer_ticks() && !list_empty(&sleeping_list)) {
       e = list_pop_front(&sleeping_list);
       struct thread *t = list_entry (e, struct thread, sleepelem);
       sema_up(&t->sema);
