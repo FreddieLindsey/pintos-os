@@ -99,8 +99,7 @@ timer_sleep (int64_t ticks)
 
   enum intr_level old_level = intr_disable ();
 
-  // TODO: change to sema
-  thread_block();
+  sema_down(&thread_current()->sema);
 
   intr_set_level (old_level);
 
@@ -188,7 +187,7 @@ timer_interrupt (struct intr_frame *args UNUSED)
 static void notify_all(struct thread *t, void *aux) {
 
   if (t->status == THREAD_BLOCKED && t->sleep_until <= timer_ticks()) {
-    thread_unblock(t);
+    sema_up(&t->sema);
   }
 
 }
