@@ -25,7 +25,6 @@ static int64_t ticks;
 static unsigned loops_per_tick;
 
 static intr_handler_func timer_interrupt;
-static void notify_all(struct thread *t, void *aux);
 static bool too_many_loops (unsigned loops);
 static void busy_wait (int64_t loops);
 static void real_time_sleep (int64_t num, int32_t denom);
@@ -92,17 +91,9 @@ timer_sleep (int64_t ticks)
 {
   int64_t start = timer_ticks ();
 
-  // Set thread wake time
-  thread_current()->sleep_until = start + ticks;
-
   ASSERT (intr_get_level () == INTR_ON);
-
-  enum intr_level old_level = intr_disable ();
-
-  sema_down(&thread_current()->sema);
-
-  intr_set_level (old_level);
-
+  while (timer_elapsed (start) < ticks) 
+    thread_yield ();
 }
 
 /* Sleeps for approximately MS milliseconds.  Interrupts must be
@@ -174,22 +165,13 @@ timer_print_stats (void)
 {
   printf ("Timer: %"PRId64" ticks\n", timer_ticks ());
 }
-
+
 /* Timer interrupt handler. */
 static void
 timer_interrupt (struct intr_frame *args UNUSED)
 {
   ticks++;
   thread_tick ();
-  thread_foreach(notify_all, 0);
-}
-
-static void notify_all(struct thread *t, void *aux) {
-
-  if (t->status == THREAD_BLOCKED && t->sleep_until <= timer_ticks()) {
-    sema_up(&t->sema);
-  }
-
 }
 
 /* Returns true if LOOPS iterations waits for more than one timer
