@@ -102,9 +102,7 @@ timer_sleep (int64_t ticks)
 
   thread_current()->sleep_until = sleep_until;
     printf("%" PRId64 "\n", thread_current()->sleep_until); 
-  list_push_back(&sleeping_list, &thread_current()->elem);
-  //list_insert_ordered(&sleeping_list, &thread_current()->elem, (list_less_func*)&less, NULL);
-  printf("%d\n", list_size(&sleeping_list));
+  list_insert_ordered(&sleeping_list, &thread_current()->elem, (list_less_func*)&less, NULL);
   sema_down(&thread_current()->sema);
 }
 
@@ -117,21 +115,25 @@ bool less(const struct list_elem* cur, const struct list_elem* next, void* aux) 
 
 void notify_all() {
   struct list_elem *e;
-//  enum intr_level old_level = intr_disable();
-  
+  enum intr_level old_level = intr_disable();
+
   if (!list_empty(&sleeping_list)) {
+
+    // Print the list
+    struct list_elem *e;
+    for (e = list_begin(&sleeping_list); e != list_end(&sleeping_list); e = list_next(e)) {
+      struct thread *t = list_entry(e, struct thread, elem);
+      // Comment
+    }
+
     while(list_entry(list_begin(&sleeping_list), struct thread, elem)->sleep_until <= timer_ticks()) {
       e = list_pop_front(&sleeping_list);
       struct thread *t = list_entry (e, struct thread, elem);
-      printf("%" PRId64 "\n", t->sleep_until);
-      e = list_pop_front(&sleeping_list);
-      t = list_entry (e, struct thread, elem);
-      printf("%" PRId64 "\n", t->sleep_until);
       sema_up(&t->sema);
     }
   }
 
- //intr_set_level (old_level);
+  intr_set_level (old_level);
 }
 
 /* Sleeps for approximately MS milliseconds.  Interrupts must be
