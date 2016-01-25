@@ -26,3 +26,7 @@ RUN mkdir -p /project/src/utils
 
 # Add the utils to the ENV
 ENV PATH /project/src/utils:$PATH
+
+# Install tmux/gdb for debugging (multi-window)
+RUN apt-get install -y tmux
+RUN apt-get install -y gdb
