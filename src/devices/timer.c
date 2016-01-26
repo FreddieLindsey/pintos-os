@@ -96,12 +96,7 @@ timer_sleep (int64_t ticks)
   thread_current()->sleep_until = start + ticks;
 
   ASSERT (intr_get_level () == INTR_ON);
-
-  enum intr_level old_level = intr_disable ();
-
   sema_down(&thread_current()->sema);
-
-  intr_set_level (old_level);
 
 }
 
@@ -181,7 +176,9 @@ timer_interrupt (struct intr_frame *args UNUSED)
 {
   ticks++;
   thread_tick ();
+  enum intr_level old_level = intr_disable();
   thread_foreach(notify, 0);
+  intr_set_level(old_level);
 }
 
 static void notify(struct thread *t, void *aux) {
