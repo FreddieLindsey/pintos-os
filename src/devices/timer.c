@@ -25,7 +25,7 @@ static int64_t ticks;
 static unsigned loops_per_tick;
 
 static intr_handler_func timer_interrupt;
-static void notify_all(struct thread *t, void *aux);
+static void notify(struct thread *t, void *aux);
 static bool too_many_loops (unsigned loops);
 static void busy_wait (int64_t loops);
 static void real_time_sleep (int64_t num, int32_t denom);
@@ -181,10 +181,10 @@ timer_interrupt (struct intr_frame *args UNUSED)
 {
   ticks++;
   thread_tick ();
-  thread_foreach(notify_all, 0);
+  thread_foreach(notify, 0);
 }
 
-static void notify_all(struct thread *t, void *aux) {
+static void notify(struct thread *t, void *aux) {
 
   if (t->status == THREAD_BLOCKED && t->sleep_until <= timer_ticks()) {
     sema_up(&t->sema);
