@@ -3,9 +3,14 @@ box: freddielindsey/pintos
 build:
   steps:
     - script:
-      name: Testing src/devices
+      name: Compiling src/devices
       code: |
         make -C src/devices
+    - script:
+      name: Compiling design documents
+      code: |
+        make -C doc alarmclock.pdf
+        mv doc/alarmclock.pdf "$WERCKER_OUTPUT_DIR"
   after-steps:
     - slack-notifier:
       url: $SLACK_URL
@@ -14,7 +19,7 @@ build:
 deploy:
   steps:
     - script:
-      name: Checking src/devices
+      name: Testing src/devices
       code: |
         make -C src/devices check
     - script:
