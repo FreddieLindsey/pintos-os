@@ -6,15 +6,17 @@ Otherwise, git clone url where url is the url of the group's shared repository.
 
 3. The default length of a time slice in ticks is 4 as defined in thread.c. In seconds it is 4 * 1/100 = 0.04 seconds.
 
-4. Thread_init is called by main() early int Pintos initialisation, because it creates the initial thread (by creating a struct thread).
-Thread_start can be called immediately after, and it creates the idle thread that runs when all others are blocked and then enables interrupts (before this moment only atomic operations were possible).
-Any successive thread is created with thread_create.
+4. Schedule() picks the next thread to run by calling next_thread_to_run(). This function returns the head of the list of threads that are ready or, if there are not ready threads, the idle thread.
 
-Timer_sleep which is the function that handles the switching of the current thread to the one with the earliest waking time that has reached the waking time. In doing so it applies P to the thread’s semaphore to block its execution. An ordered insertion of the current thread to the list of sleeping thread is applied, using a helper function less that allows the ordering.
+Schedule then switches to the chosen thread by calling the routine switch_threads() defined in switch.S. This function saves the caller’s register state and restores the state of the thread it is switching to. 
 
-In notify_all the interrupts are disabled. Interrupts interact with the CPU allowing other threads to preempt the currently running thread. When interrupts are turned of as it is the case  in *state function name* there is the certainty of synchronisation as processes are in fact atomic. This means then while analysing the list of sleeping threads to remove those that are past their waking time there will not be any race-condition.
+As the previous thread calls the function switch_threads(), the chosen thread, which called switch_threads() earlier on in the computation, returns from this method. It is to be noted that the two threads call and return from two separate instances of the function switch_threads().
 
-Timer_interrupt takes care of calling notify_all and thread_tick, allowing the update given by the former function to be applied at every tick of the clock.
+Schedule() then calls the function thread_schedule_tail() that sets the current thread to THREAD_RUNNING and starts a new time slice. If the previous thread is not the initial thread (whose memory was not obtained via palloc()) and if its status is THREAD_DYING, it gets freed.
+
+Schedule() is called every time threads are to be switched, that is in the functions thread _yield(), thread_exit() and thread_block().
+
+Interrupts must be disabled before entering schedule() because they interact with the CPU allowing other threads to preempt the currently running thread. When interrupts are turned off there is the certainty of synchronisation as processes are in fact atomic.
 
 5. Reproducibility is the property where the same results are produced by running the same program in the same context. Given that every run of Pintos is not necessarily deterministic this means that it does not have reproducibility. This makes debugging more difficult as it is harder to work on a specific error as you cannot guarantee that it will be reproduced.
 
