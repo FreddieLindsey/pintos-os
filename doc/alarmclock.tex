@@ -73,17 +73,17 @@ Explain how thread scheduling in Pintos currently works in less than 300 words.
 Include the chain of execution of function calls. \\
 (\textit{Hint: we expect you to at least mention which functions participate in a context switch, how they interact, how and when the thread state is modified, the role of interrupts.)}
 
-Schedule() picks the next thread to run by calling next_thread_to_run(). This function returns the head of the list of threads that are ready or, if there are not ready threads, the idle thread.
+\texttt{Schedule()} picks the next thread to run by calling \texttt{next_thread_to_run()}. This function returns the head of the list of threads that are ready or, if there are not ready threads, the idle thread.
 
-Schedule then switches to the chosen thread by calling the routine switch_threads() defined in switch.S. This function saves the caller’s register state and restores the state of the thread it is switching to. 
+\texttt{Schedule()}  then switches to the chosen thread by calling the routine \texttt{switch_threads()} defined in switch.S. This function saves the caller’s register state and restores the state of the thread it is switching to. 
 
-As the previous thread calls the function switch_threads(), the chosen thread, which called switch_threads() earlier on in the computation, returns from this method. It is to be noted that the two threads call and return from two separate instances of the function switch_threads().
+As the previous thread calls the function \texttt{switch_threads()}, the chosen thread, which called \texttt{switch_threads()} earlier on in the computation, returns from this method. It is to be noted that the two threads call and return from two separate instances of the function \texttt{switch_threads()}.
 
-Schedule() then calls the function thread_schedule_tail() that sets the current thread to THREAD_RUNNING and starts a new time slice. If the previous thread is not the initial thread (whose memory was not obtained via palloc()) and if its status is THREAD_DYING, it gets freed.
+\texttt{Schedule()} then calls the function \texttt{thread_schedule_tail()} that sets the current thread to THREAD_RUNNING and starts a new time slice. If the previous thread is not the initial thread (whose memory was not obtained via \texttt{palloc()} and if its status is THREAD_DYING, it gets freed.
 
-Schedule() is called every time threads are to be switched, that is in the functions thread _yield(), thread_exit() and thread_block().
+\texttt{Schedule()} is called every time threads are to be switched, that is in the functions \texttt{thread _yield()} \texttt{thread_exit()} and \texttt{thread_block()}.
 
-Interrupts must be disabled before entering schedule() because they interact with the CPU allowing other threads to preempt the currently running thread. When interrupts are turned off there is the certainty of synchronisation as processes are in fact atomic.\\
+Interrupts must be disabled before entering \texttt{schedule()} because they interact with the CPU allowing other threads to preempt the currently running thread. When interrupts are turned off there is the certainty of synchronisation as processes are in fact atomic.\\
 
 \subsection*{Question 5 - (2 marks)}
 Explain the property of reproducibility and how the lack of reproducibility will affect debugging.
@@ -96,7 +96,11 @@ How would you print an unsigned 64 bit \texttt{int}?
 Don't forget to state any inclusions needed by your code.
 
 In order to print a 64 bit integer the library inttypes.h must be included. In this library is the macro PRId64 which can be used with the function printf. For example
-	printf("%" PRId64, i) prints the value of i where i is a 64 bit integer.\\
+	
+\begin{verbatim}
+printf("%" PRId64, i) prints the value of i where i is a 64 bit integer.
+\end{verbatim}
+
 
 \subsection*{Question 7 - (3 marks)}
 Describe the data structures and functions that locks and semaphores in Pintos have in common. 
