@@ -154,6 +154,9 @@ Changes made to \texttt{struct thread} are shown above. We used a 64-bit integer
 
 \subsubsection*{Algorithms}
 A2: ({\bf 2 marks}) Briefly describe what happens in a call to \texttt{timer$\_$sleep()}, including the actions performed by the timer interrupt handler on each timer tick. \\
+
+When \texttt{timer$\_$sleep()} is called the current thread has its \texttt{sleep$\_$until} set to the sum of the ticks specified by the caller and the current time, which specifies the earliest time the thread can be awoken. After asserting interrupts are on, \texttt{sema$\_$down()} is called on the current thread. Since each thread's semaphore is initialised to 0, this blocks the thread until \texttt{sema$\_$up()} is called. Furthermore, each timer tick \texttt{timer$\_$interrupt()} will increment ticks and call \texttt{thread$\_$tick()}, then disable interrupts and notify threads to wake up. This is done using \texttt{thread$\_$foreach()}, which iterates through all threads, passing a pointer to the notify function, which checks each thread and if it is blocked, due to a \texttt{sema$\_$down()} called in \texttt{timer$\_$sleep()}, and it is past the required \texttt{sleep$\_$until()}, the thread will be awoken by calling \texttt{sema$\_$up()}, which will unblock the thread. (The thread will finish executing \texttt{sema$\_$down()}, resetting the semaphore value to 0 allowing it to block again when required).
+
 A3: ({\bf 2 marks}) What steps are taken to minimize the amount of time spent in the timer interrupt handler?
 
 \subsubsection*{Synchronization}
