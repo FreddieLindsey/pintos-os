@@ -10,7 +10,6 @@ build:
       name: Compiling design documents
       code: |
         make -C doc alarmclock.pdf
-        mv doc/alarmclock.pdf "$WERCKER_OUTPUT_DIR"
   after-steps:
     - slack-notifier:
       url: $SLACK_URL

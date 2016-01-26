@@ -41,74 +41,115 @@ Imperial College
 
 This task is logically divided into two parts:
 \begin{itemize}
-\item Questions 1-8 test your understanding of Pintos basic concepts. 
-      To answer these questions you are invited to carefully read the manual. 
-      For some questions, examining the Pintos code can be useful to provide exhaustive answers, which might be awarded with extra marks accordingly. 
+\item Questions 1-8 test your understanding of Pintos basic concepts.
+      To answer these questions you are invited to carefully read the manual.
+      For some questions, examining the Pintos code can be useful to provide exhaustive answers, which might be awarded with extra marks accordingly.
       The maximum possible mark in Questions 1-8 is 20.
-      
-\item Question 9 tests your comprehension and ability of writing Pintos code. 
-      To successfully accomplish this task, you first have to download, compile, install and run Pintos, and then develop a simple functionality. 
-      The maximum possible mark in Question 9 is 20. 
+
+\item Question 9 tests your comprehension and ability of writing Pintos code.
+      To successfully accomplish this task, you first have to download, compile, install and run Pintos, and then develop a simple functionality.
+      The maximum possible mark in Question 9 is 20.
 \end{itemize}
 
 \subsection*{Question 1 - (1 mark)}
-Which Git command should you run to retrieve a copy of your group’s shared Pintos repository in your local directory?
+Which Git command should you run to retrieve a copy of your group’s shared Pintos repository in your local directory?\\
+
+\begin{verbatim}
+git clone git@gitlab.doc.ic.ac.uk:lab1516_spring/pintos_12
+\end{verbatim}
+
+The above command clones the repository cleanly. Should the repository already exist, the use of \texttt{git pull --rebase} will 'pull' down remote changes and rebase them into the current working directory. We use \texttt{rebase} when pulling the code to retain our commit history, and follow conflicting changes in files as they occur, rather than just brutally merge two different versions.
 
 \subsection*{Question 2 - (2 marks)}
 Why is using the \texttt{strcpy()} function to copy strings usually a bad idea? \\
-(\textit{Hint: identify the problem, give details and discuss possible solutions.})
+(\textit{Hint: identify the problem, give details and discuss possible solutions.})\\
 
-\subsection*{Question 3 - (6 marks)}
-Explain how thread scheduling in Pintos currently works in less than 300 words. 
+Since you do not specify the length of the source string to copy there is a possibility of overflowing the buffer reserved for the output string.\\
+
+\subsection*{Question 3 - (1 marks)}
+In Pintos, what is the default length (in ticks and in seconds) of a scheduler time slice? \\
+(\textit{(Hint: read the task 0 documentation carefully.)}
+
+The default length of a time slice in ticks is 4 as defined in thread.c. In seconds it is 4 * 1/100 = 0.04 seconds.\\
+
+\subsection*{Question 4 - (6 marks)}
+Explain how thread scheduling in Pintos currently works in less than 300 words.
 Include the chain of execution of function calls. \\
 (\textit{Hint: we expect you to at least mention which functions participate in a context switch, how they interact, how and when the thread state is modified, the role of interrupts.)}
 
-\subsection*{Question 4 - (2 marks)}
-Explain the property of reproducibility and how the lack of reproducibility will affect debugging.
+\texttt{schedule()} picks the next thread to run by calling \texttt{next$\_$thread$\_$to$\_$run()}. This function returns the head of the list of threads that are ready or, if there are not ready threads, the idle thread.
+
+\texttt{schedule()}  then switches to the chosen thread by calling the routine \texttt{switch$\_$threads()} defined in switch.S. This function saves the caller’s register state and restores the state of the thread it is switching to.
+
+As the previous thread calls the function \texttt{switch$\_$threads()}, the chosen thread, which called \texttt{switch$\_$threads()} earlier on in the computation, returns from this method. It is to be noted that the two threads call and return from two separate instances of the function \texttt{switch$\_$threads()}.
+
+\texttt{schedule()} then calls the function \texttt{thread$\_$schedule$\_$tail()} that sets the current thread to \texttt{THREAD$\_$RUNNING} and starts a new time slice. If the previous thread is not the initial thread (whose memory was not obtained via \texttt{palloc()} and if its status is \texttt{THREAD$\_$DYING}, it gets freed.
+
+\texttt{schedule()} is called every time threads are to be switched, that is in the functions \texttt{thread$\_$yield()} \texttt{thread$\_$exit()} and \texttt{thread$\_$block()}.
+
+Interrupts must be disabled before entering \texttt{schedule()} because they interact with the CPU allowing other threads to preempt the currently running thread. When interrupts are turned off there is the certainty of synchronisation as processes are in fact atomic.\\
 
 \subsection*{Question 5 - (2 marks)}
-How would you print an unsigned 64 bit \texttt{int}? 
-(Consider that you are working with C99). 
+Explain the property of reproducibility and how the lack of reproducibility will affect debugging.
+
+Reproducibility is the property where the same results are produced by running the same program in the same context. Given that every run of Pintos is not necessarily deterministic this means that it does not have reproducibility. This makes debugging more difficult as it is harder to work on a specific error as you cannot guarantee that it will be reproduced.\\
+
+\subsection*{Question 6 - (2 marks)}
+How would you print an unsigned 64 bit \texttt{int}?
+(Consider that you are working with C99).
 Don't forget to state any inclusions needed by your code.
 
-\subsection*{Question 6 - (3 marks)}
-Describe the data structures and functions that locks and semaphores in Pintos have in common. 
-What extra property do locks have that semaphores do not?
+In order to print a 64 bit integer the library inttypes.h must be included. In this library is the macro \texttt{PRId64} which can be used with the function \texttt{printf}. For example
+
+\begin{verbatim}
+printf("%" PRId64, i) prints the value of i where i is a 64 bit integer.
+\end{verbatim}
 
 \subsection*{Question 7 - (3 marks)}
-In Pintos, a thread is characterized by a struct and an execution stack. 
-What are the limitations on the size of these data structures? 
+Describe the data structures and functions that locks and semaphores in Pintos have in common.
+What extra property do locks have that semaphores do not?
+
+\texttt{sema$\_$init} is equivalent to\texttt{lock$\_$init} as is \texttt{sema$\_$down} to \texttt{lock$\_$acquire}, \texttt{sema$\_$up} to \texttt{lock$\_$release} as well as \texttt{sema$\_$try$\_$down} and \texttt{lock$\_$try$\_$acquire}. The lock itself also includes a binary semaphore so they also have the list data structure in common (a list of waiters).
+The extra property that locks have is that once it is acquired, only the thread that acquired it can then release it. \\
+
+\subsection*{Question 8 - (3 marks)}
+In Pintos, a thread is characterized by a struct and an execution stack.
+What are the limitations on the size of these data structures?
 Explain how this relates to stack overflow and how Pintos identifies it.
 
-\subsection*{Question 8 - (1 mark)}
-If test \texttt{src/tests/devices/alarm-multiple} fails, where would you find its output and result logs? 
-Provide both paths and file names.
-(\textit{Hint: you might want to run this test and find out.}) 
+The maximum size for the entire thread is 4kB. However, the maximum size of just the thread struct should be well below 1kB otherwise there won't be enough room for the kernel stack. This relates to stack overflow as if the kernel stack becomes too large it overflows into the thread struct as the stack grows downwards. Pintos identifies stack overflow when the value magic in the struct is not the default value. This is because the magic value is the first value to be overwritten when there is a kernel stack overflow.\\
 
-\subsection*{Question 9 - (20 marks) - The Alarm Clock}
+\subsection*{Question 9 - (1 mark)}
+If test \texttt{src/tests/devices/alarm-multiple} fails, where would you find its output and result logs?
+Provide both paths and file names.
+(\textit{Hint: you might want to run this test and find out.})
+
+Errors are stored in \texttt{tests/devices/alarm-single.errors}. The output is stored in \texttt{tests/devices/alarm-multiple.output}.
+
+\subsection*{Question 10 - (20 marks) - The Alarm Clock}
 In this question, you are requested to implement a simple functionality in Pintos and to answer the questions below.
 
-\section*{Coding the Alarm Clock in Pintos} 
-Reimplement \texttt{timer$\_$sleep()}, defined in '\texttt{devices/timer.c}’. 
-Although a working implementation of \texttt{timer$\_$sleep()} is provided, it “busy waits,” that is, it spins in a loop checking the current time and calling \texttt{thread$\_$yield()} until enough time has gone by. 
-Reimplement it to avoid busy waiting ({\bf 10 marks}). 
+\section*{Coding the Alarm Clock in Pintos}
+Reimplement \texttt{timer$\_$sleep()}, defined in '\texttt{devices/timer.c}’.
+Although a working implementation of \texttt{timer$\_$sleep()} is provided, it “busy waits,” that is, it spins in a loop checking the current time and calling \texttt{thread$\_$yield()} until enough time has gone by.
+Reimplement it to avoid busy waiting ({\bf 10 marks}).
 Further instructions and hints can be found in the Pintos manual.
 
-You also need to provide a design document which answers the following questions: 
+You also need to provide a design document which answers the following questions:
 
 \subsubsection*{Data Structures}
 A1: ({\bf 2 marks}) Copy here the declaration of each new or changed `\texttt{struct}' or `\texttt{struct}' member, global or static variable, `\texttt{typedef}', or enumeration. Identify the purpose of each in 25 words or less.
 
 \subsubsection*{Algorithms}
-A2: ({\bf 2 marks}) Briefly describe what happens in a call to \texttt{timer$\_$sleep()}, including the actions performed by the timer interrupt handler on each timer tick. \\ 
+A2: ({\bf 2 marks}) Briefly describe what happens in a call to \texttt{timer$\_$sleep()}, including the actions performed by the timer interrupt handler on each timer tick. \\
 A3: ({\bf 2 marks}) What steps are taken to minimize the amount of time spent in the timer interrupt handler?
 
 \subsubsection*{Synchronization}
-A4: ({\bf 1 mark}) How are race conditions avoided when multiple threads call \texttt{timer$\_$sleep()} simultaneously? \\ 
+A4: ({\bf 1 mark}) How are race conditions avoided when multiple threads call \texttt{timer$\_$sleep()} simultaneously? \\
 A5: ({\bf 1 mark}) How are race conditions avoided when a timer interrupt occurs during a call to \texttt{timer$\_$sleep()}?
 
 \subsubsection*{Rationale}
-A6: ({\bf 2 marks}) Why did you choose this design?  
+A6: ({\bf 2 marks}) Why did you choose this design?
 In what ways is it superior to another design you considered?
 
 \end{document}

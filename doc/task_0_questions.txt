@@ -6,6 +6,18 @@ Otherwise, git clone url where url is the url of the group's shared repository.
 
 3. The default length of a time slice in ticks is 4 as defined in thread.c. In seconds it is 4 * 1/100 = 0.04 seconds.
 
+4. Schedule() picks the next thread to run by calling next_thread_to_run(). This function returns the head of the list of threads that are ready or, if there are not ready threads, the idle thread.
+
+Schedule then switches to the chosen thread by calling the routine switch_threads() defined in switch.S. This function saves the caller’s register state and restores the state of the thread it is switching to. 
+
+As the previous thread calls the function switch_threads(), the chosen thread, which called switch_threads() earlier on in the computation, returns from this method. It is to be noted that the two threads call and return from two separate instances of the function switch_threads().
+
+Schedule() then calls the function thread_schedule_tail() that sets the current thread to THREAD_RUNNING and starts a new time slice. If the previous thread is not the initial thread (whose memory was not obtained via palloc()) and if its status is THREAD_DYING, it gets freed.
+
+Schedule() is called every time threads are to be switched, that is in the functions thread _yield(), thread_exit() and thread_block().
+
+Interrupts must be disabled before entering schedule() because they interact with the CPU allowing other threads to preempt the currently running thread. When interrupts are turned off there is the certainty of synchronisation as processes are in fact atomic.
+
 5. Reproducibility is the property where the same results are produced by running the same program in the same context. Given that every run of Pintos is not necessarily deterministic this means that it does not have reproducibility. This makes debugging more difficult as it is harder to work on a specific error as you cannot guarantee that it will be reproduced.
 
 6. In order to print a 64 bit integer the library inttypes.h must be included. In this library is the macro PRId64 which can be used with the function printf. For example
