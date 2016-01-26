@@ -30,6 +30,35 @@ James Lanes jrl14@ic.ac.uk
 >> `struct' member, global or static variable, `typedef', or
 >> enumeration.  Identify the purpose of each in 25 words or less.
 
+struct thread
+  {
+    /* Owned by thread.c. */
+    tid_t tid;                          /* Thread identifier. */
+    enum thread_status status;          /* Thread state. */
+    char name[16];                      /* Name (for debugging purposes). */
+    uint8_t *stack;                     /* Saved stack pointer. */
+    int priority;                       /* Priority. */
+    struct list_elem allelem;           /* List element for all threads list. */
+
+    /* Shared between thread.c and synch.c. */
+    struct list_elem elem;              /* List element. */
+
+    int64_t sleep_until;                /* Earliest time to wake thread. CHANGE 1 */
+    struct semaphore sema;              /* Blocks and unblocks thread. CHANGE 2 */
+
+#ifdef USERPROG
+    /* Owned by userprog/process.c. */
+    uint32_t *pagedir;                  /* Page directory. */
+#endif
+
+    /* Owned by thread.c. */
+    unsigned magic;                     /* Detects stack overflow. */
+  };
+
+CHANGE 1
+We added the sleep_until member in the thread struct to give each thread, upon sleeping, a time in ticks at which it can be woken. We used an int64_t rather than a uint64_t so negative values would cause threads to be almost immediately awoken rather than overflow and sleep for a very long time.
+
+
 >> A2: (10 marks)
 >> Explain the data structure used to track priority donation.
 >> Give a diagram that illustrates a nested donation in your structure.
