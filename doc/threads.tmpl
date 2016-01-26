@@ -58,6 +58,8 @@ struct thread
 CHANGE 1
 We added the sleep_until member in the thread struct to give each thread, upon sleeping, a time in ticks at which it can be woken. We used an int64_t rather than a uint64_t so negative values would cause threads to be almost immediately awoken rather than overflow and sleep for a very long time.
 
+CHANGE 2
+The semaphore is added as a higher level context for (un)blocking threads on a per-thread basis.
 
 >> A2: (10 marks)
 >> Explain the data structure used to track priority donation.
