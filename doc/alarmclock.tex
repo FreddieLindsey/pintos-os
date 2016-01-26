@@ -52,7 +52,7 @@ This task is logically divided into two parts:
 \end{itemize}
 
 \subsection*{Question 1 - (1 mark)}
-Which Git command should you run to retrieve a copy of your group’s shared Pintos repository in your local directory?\\
+Which Git command should you run to retrieve a copy of your group’s shared Pintos repository in your local directory?
 
 \begin{verbatim}
 git clone git@gitlab.doc.ic.ac.uk:lab1516_spring/pintos_12
@@ -61,21 +61,21 @@ git clone git@gitlab.doc.ic.ac.uk:lab1516_spring/pintos_12
 The above command clones the repository cleanly. Should the repository already exist, the use of \texttt{git pull --rebase} will 'pull' down remote changes and rebase them into the current working directory. We use \texttt{rebase} when pulling the code to retain our commit history, and follow conflicting changes in files as they occur, rather than just brutally merge two different versions.
 
 \subsection*{Question 2 - (2 marks)}
-Why is using the \texttt{strcpy()} function to copy strings usually a bad idea? \\
-(\textit{Hint: identify the problem, give details and discuss possible solutions.})\\
+Why is using the \texttt{strcpy()} function to copy strings usually a bad idea?
+(\textit{Hint: identify the problem, give details and discuss possible solutions.}) \\
 
-Since you do not specify the length of the source string to copy there is a possibility of overflowing the buffer reserved for the output string.\\
+Since you do not specify the length of the source string to copy there is a possibility of overflowing the buffer reserved for the output string.
 
 \subsection*{Question 3 - (1 marks)}
-In Pintos, what is the default length (in ticks and in seconds) of a scheduler time slice? \\
-(\textit{(Hint: read the task 0 documentation carefully.)}
+In Pintos, what is the default length (in ticks and in seconds) of a scheduler time slice?
+(\textit{(Hint: read the task 0 documentation carefully.)} \\
 
-The default length of a time slice in ticks is 4 as defined in thread.c. In seconds it is 4 * 1/100 = 0.04 seconds.\\
+The default length of a time slice in ticks is 4 as defined in thread.c. In seconds it is 4 * 1/100 = 0.04 seconds.
 
 \subsection*{Question 4 - (6 marks)}
 Explain how thread scheduling in Pintos currently works in less than 300 words.
-Include the chain of execution of function calls. \\
-(\textit{Hint: we expect you to at least mention which functions participate in a context switch, how they interact, how and when the thread state is modified, the role of interrupts.)}
+Include the chain of execution of function calls.
+(\textit{Hint: we expect you to at least mention which functions participate in a context switch, how they interact, how and when the thread state is modified, the role of interrupts.)} \\
 
 \texttt{schedule()} picks the next thread to run by calling \texttt{next$\_$thread$\_$to$\_$run()}. This function returns the head of the list of threads that are ready or, if there are not ready threads, the idle thread.
 
@@ -87,19 +87,19 @@ As the previous thread calls the function \texttt{switch$\_$threads()}, the chos
 
 \texttt{schedule()} is called every time threads are to be switched, that is in the functions \texttt{thread$\_$yield()} \texttt{thread$\_$exit()} and \texttt{thread$\_$block()}.
 
-Interrupts must be disabled before entering \texttt{schedule()} because they interact with the CPU allowing other threads to preempt the currently running thread. When interrupts are turned off there is the certainty of synchronisation as processes are in fact atomic.\\
+Interrupts must be disabled before entering \texttt{schedule()} because they interact with the CPU allowing other threads to preempt the currently running thread. When interrupts are turned off there is the certainty of synchronisation as processes are in fact atomic.
 
 \subsection*{Question 5 - (2 marks)}
-Explain the property of reproducibility and how the lack of reproducibility will affect debugging.
+Explain the property of reproducibility and how the lack of reproducibility will affect debugging. \\
 
-Reproducibility is the property where the same results are produced by running the same program in the same context. Given that every run of Pintos is not necessarily deterministic this means that it does not have reproducibility. This makes debugging more difficult as it is harder to work on a specific error as you cannot guarantee that it will be reproduced.\\
+Reproducibility is the property where the same results are produced by running the same program in the same context. Given that every run of Pintos is not necessarily deterministic this means that it does not have reproducibility. This makes debugging more difficult as it is harder to work on a specific error as you cannot guarantee that it will be reproduced.
 
 \subsection*{Question 6 - (2 marks)}
 How would you print an unsigned 64 bit \texttt{int}?
 (Consider that you are working with C99).
-Don't forget to state any inclusions needed by your code.
+Don't forget to state any inclusions needed by your code. \\
 
-In order to print a 64 bit integer the library inttypes.h must be included. In this library is the macro \texttt{PRId64} which can be used with the function \texttt{printf}. For example
+In order to print a 64 bit integer the library inttypes.h must be included. In this library is the macro \texttt{PRId64} which can be used with the function \texttt{printf}. For example:
 
 \begin{verbatim}
 printf("%" PRId64, i) prints the value of i where i is a 64 bit integer.
@@ -107,24 +107,25 @@ printf("%" PRId64, i) prints the value of i where i is a 64 bit integer.
 
 \subsection*{Question 7 - (3 marks)}
 Describe the data structures and functions that locks and semaphores in Pintos have in common.
-What extra property do locks have that semaphores do not?
+What extra property do locks have that semaphores do not? \\
 
 \texttt{sema$\_$init} is equivalent to\texttt{lock$\_$init} as is \texttt{sema$\_$down} to \texttt{lock$\_$acquire}, \texttt{sema$\_$up} to \texttt{lock$\_$release} as well as \texttt{sema$\_$try$\_$down} and \texttt{lock$\_$try$\_$acquire}. The lock itself also includes a binary semaphore so they also have the list data structure in common (a list of waiters).
-The extra property that locks have is that once it is acquired, only the thread that acquired it can then release it. \\
+The extra property that locks have is that once it is acquired, only the thread that acquired it can then release it.
 
 \subsection*{Question 8 - (3 marks)}
 In Pintos, a thread is characterized by a struct and an execution stack.
 What are the limitations on the size of these data structures?
-Explain how this relates to stack overflow and how Pintos identifies it.
+Explain how this relates to stack overflow and how Pintos identifies it. \\
 
-The maximum size for the entire thread is 4kB. However, the maximum size of just the thread struct should be well below 1kB otherwise there won't be enough room for the kernel stack. This relates to stack overflow as if the kernel stack becomes too large it overflows into the thread struct as the stack grows downwards. Pintos identifies stack overflow when the value magic in the struct is not the default value. This is because the magic value is the first value to be overwritten when there is a kernel stack overflow.\\
+The maximum size for the entire thread is 4kB. However, the maximum size of just the thread struct should be well below 1kB otherwise there won't be enough room for the kernel stack. This relates to stack overflow as if the kernel stack becomes too large it overflows into the thread struct as the stack grows downwards. Pintos identifies stack overflow when the value magic in the struct is not the default value. This is because the magic value is the first value to be overwritten when there is a kernel stack overflow.
 
 \subsection*{Question 9 - (1 mark)}
 If test \texttt{src/tests/devices/alarm-multiple} fails, where would you find its output and result logs?
 Provide both paths and file names.
-(\textit{Hint: you might want to run this test and find out.})
+(\textit{Hint: you might want to run this test and find out.}) \\
 
-Errors are stored in \texttt{tests/devices/alarm-single.errors}. The output is stored in \texttt{tests/devices/alarm-multiple.output}.
+Errors are stored in \texttt{tests/devices/alarm-single.errors}. \\
+The output is stored in \texttt{tests/devices/alarm-multiple.output}.
 
 \subsection*{Question 10 - (20 marks) - The Alarm Clock}
 In this question, you are requested to implement a simple functionality in Pintos and to answer the questions below.
@@ -163,13 +164,14 @@ When \texttt{timer$\_$sleep()} is called the current thread has its \texttt{slee
 
 A3: ({\bf 2 marks}) What steps are taken to minimize the amount of time spent in the timer interrupt handler? \\
 
-We made sure the instructions in \texttt{timer$\_$interrupt()} were as minimal as possible: the function called only checking 2 boolean conditions, then calling \texttt{sema$\_$up()} if required. Furthermore, the function fails fast: if the first boolean check fails the function will exit. We do check each thread every tick since we use that \texttt{all$\_$threads} list, however we chose this design against maintaining an ordered list as we felt this was more efficient overall. \\
+We made sure the instructions in \texttt{timer$\_$interrupt()} were as minimal as possible: the function called only checking 2 boolean conditions, then calling \texttt{sema$\_$up()} if required. Furthermore, the function fails fast: if the first boolean check fails the function will exit. We do check each thread every tick since we use that \texttt{all$\_$threads} list, however we chose this design against maintaining an ordered list as we felt this was more efficient overall.
 
 \subsubsection*{Synchronization}
 A4: ({\bf 1 mark}) How are race conditions avoided when multiple threads call \texttt{timer$\_$sleep()} simultaneously? \\
 
 There should not be any race conditions in \texttt{timer$\_$sleep()}, since the only operations occuring are setting the \texttt{sleep$\_$until} member, then calling \texttt{sema$\_$down()} which blocks interrupts. Each thread's \texttt{struct} contains a semaphore. In \texttt{timer$\_$sleep()}, the function \texttt{sema$\_$down()} is called on the current thread. This then blocks the current thread.
 
+\noindent
 A5: ({\bf 1 mark}) How are race conditions avoided when a timer interrupt occurs during a call to \texttt{timer$\_$sleep()}? \\
 
 Inside the \texttt{timer$\_$interrupt()} function called by \texttt{timer$\_$sleep()}, interrupts are disabled before accessing the \texttt{all$\_$threads()} list thus ensuring synchronisation, preventing other threads from accessing it, then enabled afterwards. We had to disable interrupts rather than use synchronisation primitives due to being inside the interrupt handler. \\
