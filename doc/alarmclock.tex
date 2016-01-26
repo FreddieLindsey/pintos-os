@@ -150,24 +150,28 @@ struct thread {
 }
 \end{verbatim}
 
-Changes made to \texttt{struct thread} are shown above. We used a 64-bit integer to store the time left until the thread should be unblocked and run. We had chosen a signed integer to ensure that if a negative value was given, the thread would awaken again immediately rather than the value overflowing and the thread sleeping for a long time. This was a vital component of ridding busy waiting. Also, we used a semaphore per thread to give a higher level construct to manipulate thread (un)blocking.
+Changes made to \texttt{struct thread} are shown above. \\
+
+We used a 64-bit integer to store the time left until the thread should be unblocked and run. We had chosen a signed integer to ensure that if a negative value was given, the thread would awaken again immediately rather than the value overflowing and the thread sleeping for a long time. \\
+
+This was a vital component of ridding busy waiting. Also, we used a semaphore per thread to give a higher level construct to manipulate thread (un)blocking.
 
 \subsubsection*{Algorithms}
 A2: ({\bf 2 marks}) Briefly describe what happens in a call to \texttt{timer$\_$sleep()}, including the actions performed by the timer interrupt handler on each timer tick. \\
 
-When \texttt{timer$\_$sleep()} is called the current thread has its \texttt{sleep$\_$until} set to the sum of the ticks specified by the caller and the current time, which specifies the earliest time the thread can be awoken. After asserting interrupts are on, \texttt{sema$\_$down()} is called on the current thread. Since each thread's semaphore is initialised to 0, this blocks the thread until \texttt{sema$\_$up()} is called. Furthermore, each timer tick \texttt{timer$\_$interrupt()} will increment ticks and call \texttt{thread$\_$tick()}, then disable interrupts and notify threads to wake up. This is done using \texttt{thread$\_$foreach()}, which iterates through all threads, passing a pointer to the notify function, which checks each thread and if it is blocked, due to a \texttt{sema$\_$down()} called in \texttt{timer$\_$sleep()}, and it is past the required \texttt{sleep$\_$until()}, the thread will be awoken by calling \texttt{sema$\_$up()}, which will unblock the thread. (The thread will finish executing \texttt{sema$\_$down()}, resetting the semaphore value to 0 allowing it to block again when required).
+When \texttt{timer$\_$sleep()} is called the current thread has its \texttt{sleep$\_$until} set to the sum of the ticks specified by the caller and the current time, which specifies the earliest time the thread can be awoken. After asserting interrupts are on, \texttt{sema$\_$down()} is called on the current thread. Since each thread's semaphore is initialised to 0, this blocks the thread until \texttt{sema$\_$up()} is called. Furthermore, each timer tick \texttt{timer$\_$interrupt()} will increment ticks and call \texttt{thread$\_$tick()}, then disable interrupts and notify threads to wake up. This is done using \texttt{thread$\_$foreach()}, which iterates through all threads, passing a pointer to the notify function, which checks each thread and if it is blocked, due to a \texttt{sema$\_$down()} called in \texttt{timer$\_$sleep()}, and it is past the required \texttt{sleep$\_$until()}, the thread will be awoken by calling \texttt{sema$\_$up()}, which will unblock the thread. (The thread will finish executing \texttt{sema$\_$down()}, resetting the semaphore value to 0 allowing it to block again when required). \\
 
-A3: ({\bf 2 marks}) What steps are taken to minimize the amount of time spent in the timer interrupt handler?
+A3: ({\bf 2 marks}) What steps are taken to minimize the amount of time spent in the timer interrupt handler? \\
 
-We made sure the instructions in \texttt{timer$\_$interrupt()} were as minimal as possible: the function called only checking 2 boolean conditions, then calling \texttt{sema$\_$up()} if required. Furthermore, the function fails fast: if the first boolean check fails the function will exit. We do check each thread every tick since we use that \texttt{all$\_$threads} list, however we chose this design against maintaining an ordered list as we felt this was more efficient overall.
+We made sure the instructions in \texttt{timer$\_$interrupt()} were as minimal as possible: the function called only checking 2 boolean conditions, then calling \texttt{sema$\_$up()} if required. Furthermore, the function fails fast: if the first boolean check fails the function will exit. We do check each thread every tick since we use that \texttt{all$\_$threads} list, however we chose this design against maintaining an ordered list as we felt this was more efficient overall. \\
 
 \subsubsection*{Synchronization}
 A4: ({\bf 1 mark}) How are race conditions avoided when multiple threads call \texttt{timer$\_$sleep()} simultaneously? \\
-A5: ({\bf 1 mark}) How are race conditions avoided when a timer interrupt occurs during a call to \texttt{timer$\_$sleep()}?
+A5: ({\bf 1 mark}) How are race conditions avoided when a timer interrupt occurs during a call to \texttt{timer$\_$sleep()}? \\
 
 \subsubsection*{Rationale}
 A6: ({\bf 2 marks}) Why did you choose this design?
-In what ways is it superior to another design you considered?
+In what ways is it superior to another design you considered? \\
 
 Initially we created a list of sleeping threads, initialised at the same time as the other lists of threads. We kept the list sorted by using \texttt{list$\_$insert$\_$ordered} and passing a pointer to a function we created which compared the \texttt{sleep$\_$until} members of the threads being compared. Each tick, using \texttt{timer$\_$interrupt}, the thread at the head of the list would be checked to see if it could be woken. This design led to lots of bugs with the list which we were having trouble catching, and ultimately the overheads in terms of space, in having an extra list, and time, in inserting threads into the ordered list. Therfore we tried an alternative design, where we simply iterated through the existing list of all threads using \texttt{thread$\_$foreach} in each \texttt{timer$\_$interrupt} and passed a pointer to a notify function which checked if a thread was blocked, and if the current time was past its \texttt{sleep$\_$until} time, and in this case unblocked the thread using \texttt{sema$\_$up}. This added the extra time overhead of checking every thread every tick to see if it is blocked and can be awoken, but we decided this was better than maintaining an extra list.
 
