@@ -52,40 +52,75 @@ This task is logically divided into two parts:
 \end{itemize}
 
 \subsection*{Question 1 - (1 mark)}
-Which Git command should you run to retrieve a copy of your group’s shared Pintos repository in your local directory?
+Which Git command should you run to retrieve a copy of your group’s shared Pintos repository in your local directory?\\
+
+git pull inside the directory if the local directory already exists. Otherwise, git clone url where url is the url of the group's shared repository.
 
 \subsection*{Question 2 - (2 marks)}
 Why is using the \texttt{strcpy()} function to copy strings usually a bad idea? \\
-(\textit{Hint: identify the problem, give details and discuss possible solutions.})
+(\textit{Hint: identify the problem, give details and discuss possible solutions.})\\
 
-\subsection*{Question 3 - (6 marks)}
+Since you do not specify the length of the source string to copy there is a possibility of overflowing the buffer reserved for the output string.\\
+
+\subsection*{Question 3 - (1 marks)}
+In Pintos, what is the default length (in ticks and in seconds) of a scheduler time slice? \\
+(\textit{(Hint: read the task 0 documentation carefully.)}
+
+The default length of a time slice in ticks is 4 as defined in thread.c. In seconds it is 4 * 1/100 = 0.04 seconds.\\
+
+\subsection*{Question 4 - (6 marks)}
 Explain how thread scheduling in Pintos currently works in less than 300 words. 
 Include the chain of execution of function calls. \\
 (\textit{Hint: we expect you to at least mention which functions participate in a context switch, how they interact, how and when the thread state is modified, the role of interrupts.)}
 
-\subsection*{Question 4 - (2 marks)}
-Explain the property of reproducibility and how the lack of reproducibility will affect debugging.
+Schedule() picks the next thread to run by calling next_thread_to_run(). This function returns the head of the list of threads that are ready or, if there are not ready threads, the idle thread.
+
+Schedule then switches to the chosen thread by calling the routine switch_threads() defined in switch.S. This function saves the caller’s register state and restores the state of the thread it is switching to. 
+
+As the previous thread calls the function switch_threads(), the chosen thread, which called switch_threads() earlier on in the computation, returns from this method. It is to be noted that the two threads call and return from two separate instances of the function switch_threads().
+
+Schedule() then calls the function thread_schedule_tail() that sets the current thread to THREAD_RUNNING and starts a new time slice. If the previous thread is not the initial thread (whose memory was not obtained via palloc()) and if its status is THREAD_DYING, it gets freed.
+
+Schedule() is called every time threads are to be switched, that is in the functions thread _yield(), thread_exit() and thread_block().
+
+Interrupts must be disabled before entering schedule() because they interact with the CPU allowing other threads to preempt the currently running thread. When interrupts are turned off there is the certainty of synchronisation as processes are in fact atomic.\\
 
 \subsection*{Question 5 - (2 marks)}
+Explain the property of reproducibility and how the lack of reproducibility will affect debugging.
+
+Reproducibility is the property where the same results are produced by running the same program in the same context. Given that every run of Pintos is not necessarily deterministic this means that it does not have reproducibility. This makes debugging more difficult as it is harder to work on a specific error as you cannot guarantee that it will be reproduced.\\
+
+\subsection*{Question 6 - (2 marks)}
 How would you print an unsigned 64 bit \texttt{int}? 
 (Consider that you are working with C99). 
 Don't forget to state any inclusions needed by your code.
 
-\subsection*{Question 6 - (3 marks)}
+In order to print a 64 bit integer the library inttypes.h must be included. In this library is the macro PRId64 which can be used with the function printf. For example
+	printf("%" PRId64, i) prints the value of i where i is a 64 bit integer.\\
+
+\subsection*{Question 7 - (3 marks)}
 Describe the data structures and functions that locks and semaphores in Pintos have in common. 
 What extra property do locks have that semaphores do not?
 
-\subsection*{Question 7 - (3 marks)}
+Sema_init is equivalent to lock_init as is sema_down to lock_acquire, sema_up to lock_release as well as sema_try_down and lock_try_acquire. The lock itself also includes a binary semaphore so they also have the list data structure in common (a list of waiters).
+The extra property that locks have is that once it is acquired, only the thread that acquired it can then release it. \\
+
+\subsection*{Question 8 - (3 marks)}
 In Pintos, a thread is characterized by a struct and an execution stack. 
 What are the limitations on the size of these data structures? 
 Explain how this relates to stack overflow and how Pintos identifies it.
 
-\subsection*{Question 8 - (1 mark)}
+The maximum size for the entire thread is 4kB. However, the maximum size of just the thread struct should be well below 1kB otherwise there won't be enough room for the kernel stack. This relates to stack overflow as if the kernel stack becomes too large it overflows into the thread struct as the stack grows downwards. Pintos identifies stack overflow when the value magic in the struct is not the default value. This is because the magic value is the first value to be overwritten when there is a kernel stack overflow.\\
+
+\subsection*{Question 9 - (1 mark)}
 If test \texttt{src/tests/devices/alarm-multiple} fails, where would you find its output and result logs? 
 Provide both paths and file names.
 (\textit{Hint: you might want to run this test and find out.}) 
 
-\subsection*{Question 9 - (20 marks) - The Alarm Clock}
+Errors are stored in tests/devices/alarm-single.errors.
+The output is stored in tests/devices/alarm-multiple.output\\
+
+\subsection*{Question 10 - (20 marks) - The Alarm Clock}
 In this question, you are requested to implement a simple functionality in Pintos and to answer the questions below.
 
 \section*{Coding the Alarm Clock in Pintos} 
