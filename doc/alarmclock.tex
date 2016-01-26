@@ -140,6 +140,18 @@ You also need to provide a design document which answers the following questions
 \subsubsection*{Data Structures}
 A1: ({\bf 2 marks}) Copy here the declaration of each new or changed `\texttt{struct}' or `\texttt{struct}' member, global or static variable, `\texttt{typedef}', or enumeration. Identify the purpose of each in 25 words or less.
 
+\begin{verbatim}
+// File: src/threads/thread.h
+struct thread {
+  ...
+  int64_t sleep_until;                /* Earliest time to wake thread. */
+  struct semaphore sema;              /* Blocks and unblocks thread. */
+  ...
+}
+\end{verbatim}
+
+Changes made to \texttt{struct thread} are shown above. We used a 64-bit integer to store the time left until the thread should be unblocked and run. A signed integer was chosen that was in the past - should a thread already have been awoken at the point of execution. This was a vital component of ridding busy waiting. Also, we used a semaphore per thread to give a higher level construct to manipulate thread (un)blocking.
+
 \subsubsection*{Algorithms}
 A2: ({\bf 2 marks}) Briefly describe what happens in a call to \texttt{timer$\_$sleep()}, including the actions performed by the timer interrupt handler on each timer tick. \\
 A3: ({\bf 2 marks}) What steps are taken to minimize the amount of time spent in the timer interrupt handler?
