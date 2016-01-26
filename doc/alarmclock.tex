@@ -159,6 +159,8 @@ When \texttt{timer$\_$sleep()} is called the current thread has its \texttt{slee
 
 A3: ({\bf 2 marks}) What steps are taken to minimize the amount of time spent in the timer interrupt handler?
 
+We made sure the instructions in \texttt{timer$\_$interrupt()} were as minimal as possible: the function called only checking 2 boolean conditions, then calling \texttt{sema$\_$up()} if required. Furthermore, the function fails fast: if the first boolean check fails the function will exit. We do check each thread every tick since we use that \texttt{all$\_$threads} list, however we chose this design against maintaining an ordered list as we felt this was more efficient overall.
+
 \subsubsection*{Synchronization}
 A4: ({\bf 1 mark}) How are race conditions avoided when multiple threads call \texttt{timer$\_$sleep()} simultaneously? \\
 A5: ({\bf 1 mark}) How are race conditions avoided when a timer interrupt occurs during a call to \texttt{timer$\_$sleep()}?
