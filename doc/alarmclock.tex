@@ -168,9 +168,11 @@ We made sure the instructions in \texttt{timer$\_$interrupt()} were as minimal a
 \subsubsection*{Synchronization}
 A4: ({\bf 1 mark}) How are race conditions avoided when multiple threads call \texttt{timer$\_$sleep()} simultaneously? \\
 
-There should not be any race conditions in \texttt{timer$\_$sleep()}, since the only operations occuring are setting the \texttt{sleep$\_$until} member, then calling \texttt{sema$\_$down()} which blocks interrupts. Each thread's \texttt{struct} contains a semaphore. In \texttt{timer$\_$sleep()}, the function \texttt{sema$\_$down()} is called on the current thread. This then blocks the current thread. \\
+There should not be any race conditions in \texttt{timer$\_$sleep()}, since the only operations occuring are setting the \texttt{sleep$\_$until} member, then calling \texttt{sema$\_$down()} which blocks interrupts. Each thread's \texttt{struct} contains a semaphore. In \texttt{timer$\_$sleep()}, the function \texttt{sema$\_$down()} is called on the current thread. This then blocks the current thread.
 
 A5: ({\bf 1 mark}) How are race conditions avoided when a timer interrupt occurs during a call to \texttt{timer$\_$sleep()}? \\
+
+Inside the \texttt{timer$\_$interrupt()} function called by \texttt{timer$\_$sleep()}, interrupts are disabled before accessing the \texttt{all$\_$threads()} list thus ensuring synchronisation, preventing other threads from accessing it, then enabled afterwards. We had to disable interrupts rather than use synchronisation primitives due to being inside the interrupt handler. \\
 
 \subsubsection*{Rationale}
 A6: ({\bf 2 marks}) Why did you choose this design?
