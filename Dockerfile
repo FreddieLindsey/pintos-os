@@ -30,3 +30,6 @@ ENV PATH /project/src/utils:$PATH
 # Install tmux/gdb for debugging (multi-window)
 RUN apt-get install -y tmux
 RUN apt-get install -y gdb
+
+# Tex for documentation
+RUN apt-get --no-install-recommends install -y texlive texlive-latex-extra
