@@ -167,6 +167,9 @@ We made sure the instructions in \texttt{timer$\_$interrupt()} were as minimal a
 
 \subsubsection*{Synchronization}
 A4: ({\bf 1 mark}) How are race conditions avoided when multiple threads call \texttt{timer$\_$sleep()} simultaneously? \\
+
+Each thread's \texttt{struct} contains a semaphore. In \texttt{timer$\_$sleep()}, the function \texttt{sema$\_$down()} is called on the current thread. This then blocks the current thread.
+
 A5: ({\bf 1 mark}) How are race conditions avoided when a timer interrupt occurs during a call to \texttt{timer$\_$sleep()}? \\
 
 \subsubsection*{Rationale}
