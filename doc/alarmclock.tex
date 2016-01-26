@@ -150,7 +150,7 @@ struct thread {
 }
 \end{verbatim}
 
-Changes made to \texttt{struct thread} are shown above. We used a 64-bit integer to store the time left until the thread should be unblocked and run. A signed integer was chosen that was in the past - should a thread already have been awoken at the point of execution. This was a vital component of ridding busy waiting. Also, we used a semaphore per thread to give a higher level construct to manipulate thread (un)blocking.
+Changes made to \texttt{struct thread} are shown above. We used a 64-bit integer to store the time left until the thread should be unblocked and run. We had chosen a signed integer to ensure that if a negative value was given, the thread would awaken again immediately rather than the value overflowing and the thread sleeping for a long time. This was a vital component of ridding busy waiting. Also, we used a semaphore per thread to give a higher level construct to manipulate thread (un)blocking.
 
 \subsubsection*{Algorithms}
 A2: ({\bf 2 marks}) Briefly describe what happens in a call to \texttt{timer$\_$sleep()}, including the actions performed by the timer interrupt handler on each timer tick. \\
