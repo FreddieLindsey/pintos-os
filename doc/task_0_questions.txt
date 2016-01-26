@@ -6,6 +6,16 @@ Otherwise, git clone url where url is the url of the group's shared repository.
 
 3. The default length of a time slice in ticks is 4 as defined in thread.c. In seconds it is 4 * 1/100 = 0.04 seconds.
 
+4. Thread_init is called by main() early int Pintos initialisation, because it creates the initial thread (by creating a struct thread).
+Thread_start can be called immediately after, and it creates the idle thread that runs when all others are blocked and then enables interrupts (before this moment only atomic operations were possible).
+Any successive thread is created with thread_create.
+
+Timer_sleep which is the function that handles the switching of the current thread to the one with the earliest waking time that has reached the waking time. In doing so it applies P to the thread’s semaphore to block its execution. An ordered insertion of the current thread to the list of sleeping thread is applied, using a helper function less that allows the ordering.
+
+In notify_all the interrupts are disabled. Interrupts interact with the CPU allowing other threads to preempt the currently running thread. When interrupts are turned of as it is the case  in *state function name* there is the certainty of synchronisation as processes are in fact atomic. This means then while analysing the list of sleeping threads to remove those that are past their waking time there will not be any race-condition.
+
+Timer_interrupt takes care of calling notify_all and thread_tick, allowing the update given by the former function to be applied at every tick of the clock.
+
 5. Reproducibility is the property where the same results are produced by running the same program in the same context. Given that every run of Pintos is not necessarily deterministic this means that it does not have reproducibility. This makes debugging more difficult as it is harder to work on a specific error as you cannot guarantee that it will be reproduced.
 
 6. In order to print a 64 bit integer the library inttypes.h must be included. In this library is the macro PRId64 which can be used with the function printf. For example
