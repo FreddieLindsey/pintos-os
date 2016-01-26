@@ -106,7 +106,7 @@ printf("%" PRId64, i) prints the value of i where i is a 64 bit integer.
 Describe the data structures and functions that locks and semaphores in Pintos have in common. 
 What extra property do locks have that semaphores do not?
 
-Sema_init is equivalent to lock_init as is sema_down to lock_acquire, sema_up to lock_release as well as sema_try_down and lock_try_acquire. The lock itself also includes a binary semaphore so they also have the list data structure in common (a list of waiters).
+\texttt{Sema_init} is equivalent to\texttt{lock_init} as is \texttt{sema_down} to \texttt{lock_acquire}, \texttt{sema_up} to texttt{lock_release} as well as \texttt{sema_try_down} and \texttt{lock_try_acquire}. The lock itself also includes a binary semaphore so they also have the list data structure in common (a list of waiters).
 The extra property that locks have is that once it is acquired, only the thread that acquired it can then release it. \\
 
 \subsection*{Question 8 - (3 marks)}
