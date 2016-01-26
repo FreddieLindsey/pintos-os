@@ -32,4 +32,4 @@ RUN apt-get install -y tmux
 RUN apt-get install -y gdb
 
 # Tex for documentation
-RUN apt-get install -y texinfo texlive
+RUN apt-get --no-install-recommends install -y texlive texlive-latex-extra
