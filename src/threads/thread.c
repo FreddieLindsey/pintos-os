@@ -349,7 +349,7 @@ thread_set_priority (int new_priority)
     // list_sort(&ready_list, /* Some function which gives high priority */, );
 
     // Compare with head since list ordered by greatest priority.
-    if (thread_current()->elem != list_begin(&ready_list)) {
+    if (&(thread_current()->elem) != list_begin(&ready_list)) {
       thread_yield();
     }
   }
