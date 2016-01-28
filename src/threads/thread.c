@@ -316,7 +316,7 @@ thread_yield (void)
 
   old_level = intr_disable ();
   if (cur != idle_thread)
-    list_push_back (&ready_list, &cur->elem);
+    list_push_back (&ready_list, &cur->elem);  // TODO: take priority into account when ordering the list
   cur->status = THREAD_READY;
   schedule ();
   intr_set_level (old_level);
@@ -346,7 +346,12 @@ thread_set_priority (int new_priority)
   int old_priority = thread_current()->priority;
   thread_current()->priority = new_priority;
   if (old_priority > new_priority) {
-    // Do something to manage this
+    // list_sort(&ready_list, /* Some function which gives high priority */, );
+
+    // Compare with head since list ordered by greatest priority.
+    if (thread_current()->elem != list_begin(&ready_list)) {
+      thread_yield();
+    }
   }
 }
 
