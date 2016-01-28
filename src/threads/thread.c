@@ -251,14 +251,14 @@ thread_unblock (struct thread *t)
   intr_set_level (old_level);
 }
 
-static bool compare_priority(const struct list_elem *a,
+bool compare_priority(const struct list_elem *a,
                              const struct list_elem *b,
                              void *aux)
 {
   struct thread *ta =  list_entry(a, struct thread, elem); // NOT SURE ELEM IS RIGHT
   struct thread *tb =  list_entry(b, struct thread, elem);
 
-  return ta->priority < tb->priority;
+  return ta->priority > tb->priority;
 }
 
 /* Returns the name of the running thread. */
