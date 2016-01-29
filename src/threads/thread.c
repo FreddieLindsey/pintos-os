@@ -246,12 +246,12 @@ thread_unblock (struct thread *t)
   old_level = intr_disable ();
   ASSERT (t->status == THREAD_BLOCKED);
   // Synchronisation safe -> List becomes ordered based on priority
-  list_insert_ordered(&ready_list, &t->elem, (list_less_func*) compare_priority, NULL);
+  list_insert_ordered(&ready_list, &t->elem, (list_less_func*) thread_compare, NULL);
   t->status = THREAD_READY;
   intr_set_level (old_level);
 }
 
-bool compare_priority(const struct list_elem *a,
+bool thread_compare(const struct list_elem *a,
                       const struct list_elem *b,
                       void *aux)
 {
@@ -328,7 +328,8 @@ thread_yield (void)
   old_level = intr_disable ();
   if (cur != idle_thread)
     //list_push_back (&ready_list, &cur->elem);
-    list_insert_ordered(&ready_list, &cur->elem, (list_less_func*) compare_priority, NULL);
+    list_insert_ordered(&ready_list, &cur->elem, (list_less_func*)
+ thread_compare, NULL);
   cur->status = THREAD_READY;
   schedule ();
   intr_set_level (old_level);
@@ -358,7 +359,8 @@ thread_set_priority (int new_priority)
   int old_priority = thread_current()->priority;
   thread_current()->priority = new_priority;
   if (old_priority > new_priority) {
-    list_sort(&ready_list, (list_less_func*) compare_priority, NULL);
+    list_sort(&ready_list, (list_less_func*)
+ thread_compare, NULL);
 
     // Compare with head since list ordered by greatest priority.
     if (&(thread_current()->elem) != list_begin(&ready_list)) {
