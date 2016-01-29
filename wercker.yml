@@ -7,6 +7,12 @@ build:
       code: |
         make -C src/devices
     - script:
+      name: Testing src/threads/fixed-point
+      code: |
+        gcc -Wall -Werror -pedantic -std=c99 src/threads/fixed-point-tests.c -o fixed-point-tests
+        ./fixed-point-tests
+        rm fixed-point-tests
+    - script:
       name: Compiling design documents
       code: |
         make -C doc alarmclock.pdf
