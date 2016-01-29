@@ -5,7 +5,6 @@
 int main() {
 
   //testing fixed-point with 17.14
-  int p = 17;
   int q = 14;
   int f = 1 << q;
   
