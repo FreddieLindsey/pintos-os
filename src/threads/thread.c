@@ -361,6 +361,9 @@ thread_set_priority (int new_priority)
   struct thread *t = thread_current();
   int old_priority = t->priority;
   t->priority = new_priority;
+
+  // FIXME: THE CURRENT THREAD IS NOT IN THE READY LIST
+
   if (new_priority < old_priority) {
     list_sort(&ready_list, (list_less_func*) thread_compare, NULL);
     thread_run_top();
