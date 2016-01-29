@@ -358,7 +358,7 @@ thread_set_priority (int new_priority)
   int old_priority = thread_current()->priority;
   thread_current()->priority = new_priority;
   if (old_priority > new_priority) {
-    // list_sort(&ready_list, /* Some function which gives high priority */, );
+    list_sort(&ready_list, (list_less_func*) compare_priority, NULL);
 
     // Compare with head since list ordered by greatest priority.
     if (&(thread_current()->elem) != list_begin(&ready_list)) {
