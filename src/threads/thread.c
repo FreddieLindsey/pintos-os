@@ -249,6 +249,8 @@ thread_unblock (struct thread *t)
   list_insert_ordered(&ready_list, &t->elem, (list_less_func*) thread_compare, NULL);
   t->status = THREAD_READY;
   intr_set_level (old_level);
+  // TODO: check if the new thread added to ready should be running
+
 }
 
 bool thread_compare(const struct list_elem *a,
@@ -360,7 +362,7 @@ thread_set_priority (int new_priority)
   thread_current()->priority = new_priority;
   if (old_priority > new_priority) {
     list_sort(&ready_list, (list_less_func*)
- thread_compare, NULL);
+    thread_compare, NULL);
 
     // Compare with head since list ordered by greatest priority.
     if (&(thread_current()->elem) != list_begin(&ready_list)) {
