@@ -13,17 +13,17 @@ int main() {
   int x = (21.3323 * f);
   int y = (30.5544 * f);
   
-  assert(IntToFP(n, f) == 114688);
-  assert(FPToInt(81920 , f) == 5);
+  assert(int_to_fp(n, f) == 114688);
+  assert(fp_to_int(81920 , f) == 5);
   assert(fp_to_int_nearest(x, f) == 21);
   assert(fp_to_int_nearest(-y, f) == -31);
-  assert(AddFPFP(x, y) == (int)(51.8867 * f));
-  assert(AddFPInt(x, n, f) == 464196);
-  assert(SubFPFP(y, x) == 151095); 
-  assert(SubFPInt(x, n, f) == 234820);
-  assert(MultiplyFPInt(x, n) == 2446556);
-  assert(MultiplyFPFP(x, y, f) == 10679001);
-  assert(DivideFPInt(x, n) == 49929);
-  assert(DivideFPFP(x, y, f) == 11438);
+  assert(add_fp_fp(x, y) == (int)(51.8867 * f));
+  assert(add_fp_int(x, n, f) == 464196);
+  assert(sub_fp_fp(y, x) == 151095); 
+  assert(sub_fp_int(x, n, f) == 234820);
+  assert(mul_fp_int(x, n) == 2446556);
+  assert(mul_fp_fp(x, y, f) == 10679001);
+  assert(div_fp_int(x, n) == 49929);
+  assert(div_fp_fp(x, y, f) == 11438);
 
 }
