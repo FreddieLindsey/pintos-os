@@ -13,17 +13,17 @@ int main() {
   int x = (21.3323 * f);
   int y = (30.5544 * f);
   
-  assert(int_to_fp(n, f) == 114688);
-  assert(fp_to_int(81920 , f) == 5);
+  assert(INT_TO_FP(n, f) == 114688);
+  assert(FP_TO_INT(81920 , f) == 5);
   assert(fp_to_int_nearest(x, f) == 21);
   assert(fp_to_int_nearest(-y, f) == -31);
-  assert(add_fp_fp(x, y) == (int)(51.8867 * f));
-  assert(add_fp_int(x, n, f) == 464196);
-  assert(sub_fp_fp(y, x) == 151095); 
-  assert(sub_fp_int(x, n, f) == 234820);
-  assert(mul_fp_int(x, n) == 2446556);
-  assert(mul_fp_fp(x, y, f) == 10679001);
-  assert(div_fp_int(x, n) == 49929);
-  assert(div_fp_fp(x, y, f) == 11438);
+  assert(ADD_FP_FP(x, y) == (int)(51.8867 * f));
+  assert(ADD_FP_INT(x, n, f) == 464196);
+  assert(SUB_FP_FP(y, x) == 151095); 
+  assert(SUB_FP_INT(x, n, f) == 234820);
+  assert(MUL_FP_INT(x, n) == 2446556);
+  assert(MUL_FP_FP(x, y, f) == 10679001);
+  assert(DIV_FP_INT(x, n) == 49929);
+  assert(DIV_FP_FP(x, y, f) == 11438);
 
 }
