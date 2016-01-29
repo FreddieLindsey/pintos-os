@@ -358,11 +358,11 @@ thread_set_priority (int new_priority)
   ASSERT (new_priority >= PRI_MIN);
   ASSERT (new_priority <= PRI_MAX);
 
-  int old_priority = thread_current()->priority;
-  thread_current()->priority = new_priority;
-  if (old_priority > new_priority) {
-    list_sort(&ready_list, (list_less_func*)
-    thread_compare, NULL);
+  struct thread *t = thread_current();
+  int old_priority = t->priority;
+  t->priority = new_priority;
+  if (new_priority < old_priority) {
+    list_sort(&ready_list, (list_less_func*) thread_compare, NULL);
     thread_run_top();
   }
 }
