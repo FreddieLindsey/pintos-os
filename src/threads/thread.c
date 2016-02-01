@@ -34,6 +34,9 @@ static struct thread *idle_thread;
 /* Initial thread, the thread running init.c:main(). */
 static struct thread *initial_thread;
 
+/* Lock for ready list */
+static struct lock ready_list_lock;
+
 /* Lock used by allocate_tid(). */
 static struct lock tid_lock;
 
@@ -92,6 +95,7 @@ thread_init (void)
   lock_init (&tid_lock);
   list_init (&ready_list);
   list_init (&all_list);
+  list_init (&ready_list_lock);
 
   /* Set up a thread structure for the running thread. */
   initial_thread = running_thread ();
@@ -248,7 +252,10 @@ thread_unblock (struct thread *t)
   list_insert_ordered(&ready_list, &t->elem, (list_less_func*) thread_compare, NULL);
   t->status = THREAD_READY;
   intr_set_level (old_level);
-  thread_run_top();
+
+  if (!intr_context()) {
+    thread_run_top();
+  }
 }
 
 bool thread_compare(const struct list_elem *a,
@@ -363,11 +370,12 @@ thread_set_priority (int new_priority)
   t->priority = new_priority;
 
   // FIXME: THE CURRENT THREAD IS NOT IN THE READY LIST
-
+  lock_acquire(&ready_list_lock);
   if (new_priority < old_priority) {
     list_sort(&ready_list, (list_less_func*) thread_compare, NULL);
     thread_run_top();
   }
+  lock_release(&ready_list_lock);
 }
 
 /* Returns the current thread's priority. */
@@ -380,7 +388,9 @@ thread_get_priority (void)
 /* Ensure the running thread is the one at the top of the ordered list */
 void thread_run_top(void) {
   // Compare with head since list ordered by greatest priority.
-  if (&(thread_current()->elem) != list_begin(&ready_list)) {
+  struct thread *max = list_entry(list_begin(&ready_list), struct thread, elem);
+
+  if (thread_current()->priority != max->priority) {
     thread_yield();
   }
 }
