@@ -39,3 +39,6 @@ CMakeLists.txt
 
 # wercker
 _*
+
+# build artifacts
+build/
