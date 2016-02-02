@@ -368,7 +368,6 @@ thread_set_priority (int new_priority)
   int old_priority = t->priority;
   t->priority = new_priority;
 
-  // FIXME: THE CURRENT THREAD IS NOT IN THE READY LIST
   lock_acquire(&ready_list_lock);
   if (new_priority < old_priority) {
     list_sort(&ready_list, (list_less_func*) thread_compare, NULL);
@@ -442,7 +441,6 @@ idle (void *idle_started_ UNUSED)
   sema_up (idle_started);
   for (;;)
     {      /* Let someone else run. */
-      //printf("%d\n", list_size(&ready_list));
       intr_disable ();
       thread_block ();
 
