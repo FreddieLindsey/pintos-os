@@ -34,6 +34,9 @@ static struct thread *idle_thread;
 /* Initial thread, the thread running init.c:main(). */
 static struct thread *initial_thread;
 
+/* Lock for ready list */
+static struct lock ready_list_lock;
+
 /* Lock used by allocate_tid(). */
 static struct lock tid_lock;
 
@@ -92,6 +95,7 @@ thread_init (void)
   lock_init (&tid_lock);
   list_init (&ready_list);
   list_init (&all_list);
+  lock_init (&ready_list_lock);
 
   /* Set up a thread structure for the running thread. */
   initial_thread = running_thread ();
@@ -242,12 +246,25 @@ thread_unblock (struct thread *t)
   enum intr_level old_level;
 
   ASSERT (is_thread (t));
-
   old_level = intr_disable ();
   ASSERT (t->status == THREAD_BLOCKED);
-  list_push_back (&ready_list, &t->elem);
+  // Synchronisation safe -> List becomes ordered based on priority
+  list_insert_ordered(&ready_list, &t->elem, (list_less_func*) thread_compare, NULL);
   t->status = THREAD_READY;
   intr_set_level (old_level);
+
+   if (thread_current() != idle_thread) {
+     thread_run_top();
+   }
+}
+
+bool thread_compare(const struct list_elem *a,
+                      const struct list_elem *b,
+                      void *aux) {
+  struct thread *ta =  list_entry(a, struct thread, elem);
+  struct thread *tb =  list_entry(b, struct thread, elem);
+
+  return ta->priority > tb->priority;
 }
 
 /* Returns the name of the running thread. */
@@ -316,7 +333,8 @@ thread_yield (void)
 
   old_level = intr_disable ();
   if (cur != idle_thread)
-    list_push_back (&ready_list, &cur->elem);
+    //list_push_back (&ready_list, &cur->elem);
+    list_insert_ordered(&ready_list, &cur->elem, (list_less_func*) thread_compare, NULL);
   cur->status = THREAD_READY;
   schedule ();
   intr_set_level (old_level);
@@ -343,7 +361,19 @@ thread_foreach (thread_action_func *func, void *aux)
 void
 thread_set_priority (int new_priority)
 {
-  thread_current ()->priority = new_priority;
+  ASSERT (new_priority >= PRI_MIN);
+  ASSERT (new_priority <= PRI_MAX);
+
+  struct thread *t = thread_current();
+  int old_priority = t->priority;
+  t->priority = new_priority;
+
+  lock_acquire(&ready_list_lock);
+  if (new_priority < old_priority) {
+    list_sort(&ready_list, (list_less_func*) thread_compare, NULL);
+    thread_run_top();
+  }
+  lock_release(&ready_list_lock);
 }
 
 /* Returns the current thread's priority. */
@@ -351,6 +381,16 @@ int
 thread_get_priority (void)
 {
   return thread_current ()->priority;
+}
+
+/* Ensure the running thread is the one at the top of the ordered list */
+void thread_run_top(void) {
+  // Compare with head since list ordered by greatest priority.
+  struct thread *max = list_entry(list_begin(&ready_list), struct thread, elem);
+
+  if (thread_current()->priority < max->priority) {
+    thread_yield();
+  }
 }
 
 /* Sets the current thread's nice value to NICE. */
@@ -399,10 +439,8 @@ idle (void *idle_started_ UNUSED)
   struct semaphore *idle_started = idle_started_;
   idle_thread = thread_current ();
   sema_up (idle_started);
-
   for (;;)
-    {
-      /* Let someone else run. */
+    {      /* Let someone else run. */
       intr_disable ();
       thread_block ();
 
