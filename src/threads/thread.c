@@ -364,11 +364,16 @@ thread_set_priority (int new_priority)
   ASSERT (new_priority >= PRI_MIN);
   ASSERT (new_priority <= PRI_MAX);
 
-  struct thread *t = thread_current();
-  int old_priority = t->priority;
-  t->priority = new_priority;
-
   lock_acquire(&ready_list_lock);
+
+  struct thread *t = thread_current();
+  int old_priority = thread_get_priority();
+  struct list_elem *e = list_back(&t->priorities);
+  struct priority_elem *back = list_entry(e, struct priority_elem, elem);
+  back->priority = new_priority;
+
+  //what happens if we change the back to be the highest priority
+
   if (new_priority < old_priority) {
     list_sort(&ready_list, (list_less_func*) thread_compare, NULL);
     thread_run_top();
@@ -380,7 +385,7 @@ thread_set_priority (int new_priority)
 int
 thread_get_priority (void)
 {
-  return thread_current ()->priority;
+  return list_front(&thread_current()->priorities);
 }
 
 /* Ensure the running thread is the one at the top of the ordered list */
@@ -507,13 +512,28 @@ init_thread (struct thread *t, const char *name, int priority)
   t->status = THREAD_BLOCKED;
   strlcpy (t->name, name, sizeof t->name);
   t->stack = (uint8_t *) t + PGSIZE;
-  t->priority = priority;
+  //t->priority = priority;
+
+  /* Thi0s is the initialisation for the priority stack */
+  list_init(&t->priorities);
+  thread_add_priority(t, priority);
+
   t->magic = THREAD_MAGIC;
   sema_init(&t->sema, 0);
 
   old_level = intr_disable ();
   list_push_back (&all_list, &t->allelem);
   intr_set_level (old_level);
+}
+
+/* This function adds a priority to the priority stack */
+void thread_add_priority(struct thread *t, int priority) {
+
+// check that it's inserted as long as it's bigger than original priority
+
+  struct priority_elem *p = malloc(sizeof(struct priority_elem));
+
+  p->priority = priority;
 }
 
 /* Allocates a SIZE-byte frame at the top of thread T's stack and
