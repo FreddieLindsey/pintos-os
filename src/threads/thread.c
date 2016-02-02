@@ -385,13 +385,13 @@ thread_set_priority (int new_priority)
 int
 thread_get_priority (void)
 {
-  return thread_get_priority(thread_current());
+  return thread_get_priority_of(thread_current());
 }
 
 /* Helper function to thread_get_priority() with the thread whose priority is
    required as argument */
 int thread_get_priority_of(struct thread *t) {
-  struct list_elem *front = list_front(t->priorities);
+  struct list_elem *front = list_front(&t->priorities);
   return list_entry(front, struct priority_elem, elem)->priority;
 }
 
@@ -540,7 +540,7 @@ void thread_donate_priority(struct thread *t, int priority) {
 }
 
 /* This function adds a priority to the priority stack */
-thread_add_priority(t, priority) {
+void thread_add_priority(struct thread *t, int priority) {
   struct list_elem *back = list_back(&t->priorities);
   int base_priority = list_entry(back, struct priority_elem, elem)->priority;
   if (priority > base_priority) {
@@ -618,7 +618,7 @@ thread_schedule_tail (struct thread *prev)
   if (prev != NULL && prev->status == THREAD_DYING && prev != initial_thread)
     {
       ASSERT (prev != cur);
-      //TODO: need to free the stack of priorities. 
+      //TODO: need to free the stack of priorities.
       palloc_free_page (prev);
     }
 }
