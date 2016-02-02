@@ -8,6 +8,7 @@
 #include "threads/interrupt.h"
 #include "threads/intr-stubs.h"
 #include "threads/palloc.h"
+#include "threads/malloc.h"
 #include "threads/switch.h"
 #include "threads/synch.h"
 #include "threads/vaddr.h"
@@ -258,13 +259,14 @@ thread_unblock (struct thread *t)
    }
 }
 
+/* Compares the current priorities of the given threads */
 bool thread_compare(const struct list_elem *a,
                       const struct list_elem *b,
                       void *aux) {
   struct thread *ta =  list_entry(a, struct thread, elem);
   struct thread *tb =  list_entry(b, struct thread, elem);
 
-  return ta->priority > tb->priority;
+  return thread_get_priority_of(ta) > thread_get_priority_of(tb);
 }
 
 /* Returns the name of the running thread. */
@@ -368,11 +370,9 @@ thread_set_priority (int new_priority)
 
   struct thread *t = thread_current();
   int old_priority = thread_get_priority();
-  struct list_elem *e = list_back(&t->priorities);
-  struct priority_elem *back = list_entry(e, struct priority_elem, elem);
-  back->priority = new_priority;
-
-  //what happens if we change the back to be the highest priority
+  struct list_elem *e = list_front(&t->priorities);
+  struct priority_elem *front = list_entry(e, struct priority_elem, elem);
+  front->priority = new_priority;
 
   if (new_priority < old_priority) {
     list_sort(&ready_list, (list_less_func*) thread_compare, NULL);
@@ -385,7 +385,14 @@ thread_set_priority (int new_priority)
 int
 thread_get_priority (void)
 {
-  return list_front(&thread_current()->priorities);
+  return thread_get_priority(thread_current());
+}
+
+/* Helper function to thread_get_priority() with the thread whose priority is
+   required as argument */
+int thread_get_priority_of(struct thread *t) {
+  struct list_elem *front = list_front(t->priorities);
+  return list_entry(front, struct priority_elem, elem)->priority;
 }
 
 /* Ensure the running thread is the one at the top of the ordered list */
@@ -393,7 +400,7 @@ void thread_run_top(void) {
   // Compare with head since list ordered by greatest priority.
   struct thread *max = list_entry(list_begin(&ready_list), struct thread, elem);
 
-  if (thread_current()->priority < max->priority) {
+  if (thread_get_priority() < thread_get_priority_of(max)) {
     thread_yield();
   }
 }
@@ -512,9 +519,8 @@ init_thread (struct thread *t, const char *name, int priority)
   t->status = THREAD_BLOCKED;
   strlcpy (t->name, name, sizeof t->name);
   t->stack = (uint8_t *) t + PGSIZE;
-  //t->priority = priority;
 
-  /* Thi0s is the initialisation for the priority stack */
+  /* This is the initialisation for the priority stack */
   list_init(&t->priorities);
   thread_add_priority(t, priority);
 
@@ -526,14 +532,21 @@ init_thread (struct thread *t, const char *name, int priority)
   intr_set_level (old_level);
 }
 
+/* This function adds a priority to the priority stack and
+   yields if necessary */
+void thread_donate_priority(struct thread *t, int priority) {
+  thread_add_priority(t, priority);
+  thread_run_top();
+}
+
 /* This function adds a priority to the priority stack */
-void thread_add_priority(struct thread *t, int priority) {
-
-// check that it's inserted as long as it's bigger than original priority
-
-  struct priority_elem *p = malloc(sizeof(struct priority_elem));
-
-  p->priority = priority;
+thread_add_priority(t, priority) {
+  struct list_elem *back = list_back(&t->priorities);
+  int base_priority = list_entry(back, struct priority_elem, elem)->priority;
+  if (priority > base_priority) {
+    struct priority_elem *p = malloc(sizeof(struct priority_elem));
+    list_insert_ordered(&t->priorities, &p->elem, (list_less_func*) thread_compare, NULL);
+  }
 }
 
 /* Allocates a SIZE-byte frame at the top of thread T's stack and
@@ -605,6 +618,7 @@ thread_schedule_tail (struct thread *prev)
   if (prev != NULL && prev->status == THREAD_DYING && prev != initial_thread)
     {
       ASSERT (prev != cur);
+      //TODO: need to free the stack of priorities. 
       palloc_free_page (prev);
     }
 }
