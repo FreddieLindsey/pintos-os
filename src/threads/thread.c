@@ -253,9 +253,9 @@ thread_unblock (struct thread *t)
   t->status = THREAD_READY;
   intr_set_level (old_level);
 
-  if (!intr_context()) {
-    thread_run_top();
-  }
+   if (thread_current() != idle_thread) {
+     thread_run_top();
+   }
 }
 
 bool thread_compare(const struct list_elem *a,
@@ -389,7 +389,7 @@ void thread_run_top(void) {
   // Compare with head since list ordered by greatest priority.
   struct thread *max = list_entry(list_begin(&ready_list), struct thread, elem);
 
-  if (thread_current()->priority != max->priority) {
+  if (thread_current()->priority < max->priority) {
     thread_yield();
   }
 }
@@ -440,10 +440,9 @@ idle (void *idle_started_ UNUSED)
   struct semaphore *idle_started = idle_started_;
   idle_thread = thread_current ();
   sema_up (idle_started);
-
   for (;;)
-    {
-      /* Let someone else run. */
+    {      /* Let someone else run. */
+      //printf("%d\n", list_size(&ready_list));
       intr_disable ();
       thread_block ();
 
