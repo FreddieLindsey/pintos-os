@@ -36,3 +36,6 @@
 .idea/
 CMakeLists.txt
 *.iml
+
+# wercker
+_*
