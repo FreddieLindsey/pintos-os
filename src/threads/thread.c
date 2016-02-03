@@ -255,6 +255,7 @@ thread_unblock (struct thread *t)
   intr_set_level (old_level);
 
    if (thread_current() != idle_thread) {
+     printf("Thread name: %s\n", thread_current()->name);
      thread_run_top();
    }
 }
@@ -523,7 +524,6 @@ init_thread (struct thread *t, const char *name, int priority)
   /* This is the initialisation for the priority stack */
   list_init(&t->priorities);
   thread_add_priority(t, priority);
-
   t->magic = THREAD_MAGIC;
   sema_init(&t->sema, 0);
 
@@ -535,18 +535,26 @@ init_thread (struct thread *t, const char *name, int priority)
 /* This function adds a priority to the priority stack and
    yields if necessary */
 void thread_donate_priority(struct thread *t, int priority) {
-  thread_add_priority(t, priority);
+
+  if (!list_empty(&t->priorities)) {
+    struct list_elem *back = list_back(&t->priorities);
+    int base_priority = list_entry(back, struct priority_elem, elem)->priority;
+    if (priority > base_priority) {
+      thread_add_priority(t, priority);
+    }
+  }
   thread_run_top();
 }
 
 /* This function adds a priority to the priority stack */
 void thread_add_priority(struct thread *t, int priority) {
-  struct list_elem *back = list_back(&t->priorities);
-  int base_priority = list_entry(back, struct priority_elem, elem)->priority;
-  if (priority > base_priority) {
-    struct priority_elem *p = malloc(sizeof(struct priority_elem));
-    list_insert_ordered(&t->priorities, &p->elem, (list_less_func*) thread_compare, NULL);
-  }
+
+  /* Add to the thread's own stack instead */
+  struct priority_elem *p = malloc(sizeof(struct priority_elem));
+  p->priority = priority;
+  list_insert_ordered(&t->priorities, &p->elem, (list_less_func*) thread_compare, NULL);
+
+
 }
 
 /* Allocates a SIZE-byte frame at the top of thread T's stack and
