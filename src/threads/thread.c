@@ -255,7 +255,6 @@ thread_unblock (struct thread *t)
   intr_set_level (old_level);
 
    if (thread_current() != idle_thread) {
-     printf("Thread name: %s\n", thread_current()->name);
      thread_run_top();
    }
 }
@@ -367,19 +366,25 @@ thread_set_priority (int new_priority)
   ASSERT (new_priority >= PRI_MIN);
   ASSERT (new_priority <= PRI_MAX);
 
-  lock_acquire(&ready_list_lock);
-
   struct thread *t = thread_current();
-  int old_priority = thread_get_priority();
-  struct list_elem *e = list_front(&t->priorities);
-  struct priority_elem *front = list_entry(e, struct priority_elem, elem);
-  front->priority = new_priority;
 
-  if (new_priority < old_priority) {
-    list_sort(&ready_list, (list_less_func*) thread_compare, NULL);
-    thread_run_top();
+  if (list_empty(&t->priorities)) {
+    t->priority = new_priority;
+  } else {
+    lock_acquire(&ready_list_lock);
+
+    int old_priority = thread_get_priority();
+    struct list_elem *e = list_front(&t->priorities);
+    struct priority_elem *front = list_entry(e, struct priority_elem, elem);
+    front->priority = new_priority;
+
+    if (new_priority < old_priority) {
+      list_sort(&ready_list, (list_less_func*) thread_compare, NULL);
+    }
+    lock_release(&ready_list_lock);
   }
-  lock_release(&ready_list_lock);
+  thread_run_top();
+
 }
 
 /* Returns the current thread's priority. */
@@ -392,8 +397,13 @@ thread_get_priority (void)
 /* Helper function to thread_get_priority() with the thread whose priority is
    required as argument */
 int thread_get_priority_of(struct thread *t) {
-  struct list_elem *front = list_front(&t->priorities);
-  return list_entry(front, struct priority_elem, elem)->priority;
+
+  if (list_empty(&t->priorities)) {
+    return t->priority;
+  } else {
+    struct list_elem *front = list_front(&t->priorities);
+    return list_entry(front, struct priority_elem, elem)->priority;
+  }
 }
 
 /* Ensure the running thread is the one at the top of the ordered list */
@@ -520,11 +530,10 @@ init_thread (struct thread *t, const char *name, int priority)
   t->status = THREAD_BLOCKED;
   strlcpy (t->name, name, sizeof t->name);
   t->stack = (uint8_t *) t + PGSIZE;
-
+  t->magic = THREAD_MAGIC;
+  t->priority = priority;
   /* This is the initialisation for the priority stack */
   list_init(&t->priorities);
-  thread_add_priority(t, priority);
-  t->magic = THREAD_MAGIC;
   sema_init(&t->sema, 0);
 
   old_level = intr_disable ();

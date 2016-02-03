@@ -87,8 +87,9 @@ struct thread
     tid_t tid;                          /* Thread identifier. */
     enum thread_status status;          /* Thread state. */
     char name[16];                      /* Name (for debugging purposes). */
-    uint8_t *stack;                     /* Saved stack pointer. */
-    struct list priorities;             /* Stack of priorities */
+    uint8_t *stack;                     /* Saved stack pointer */
+    int priority;                       /* Base priority of thread */
+    struct list priorities;             /* Stack of donated priorities */
     struct list_elem allelem;           /* List element for all threads list. */
 
     /* Shared between thread.c and synch.c. */
