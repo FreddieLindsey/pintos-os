@@ -545,13 +545,10 @@ init_thread (struct thread *t, const char *name, int priority)
    yields if necessary */
 void thread_donate_priority(struct thread *t, int priority) {
 
-  if (!list_empty(&t->priorities)) {
-    struct list_elem *back = list_back(&t->priorities);
-    int base_priority = list_entry(back, struct priority_elem, elem)->priority;
-    if (priority > base_priority) {
-      thread_add_priority(t, priority);
-    }
+  if (priority > t->priority) {
+    thread_add_priority(t, priority);
   }
+  printf("New priority: %d\n", thread_get_priority_of(t));
   thread_run_top();
 }
 

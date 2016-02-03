@@ -196,6 +196,9 @@ lock_acquire (struct lock *lock)
   ASSERT (!intr_context ());
   ASSERT (!lock_held_by_current_thread (lock));
 
+  if (lock->holder != NULL) {
+    thread_donate_priority(lock->holder, thread_get_priority());
+  }
   sema_down (&lock->semaphore);
   lock->holder = thread_current ();
 }
@@ -209,10 +212,13 @@ lock_acquire (struct lock *lock)
 bool
 lock_try_acquire (struct lock *lock)
 {
+  printf("try_acquire\n");
   bool success;
 
   ASSERT (lock != NULL);
   ASSERT (!lock_held_by_current_thread (lock));
+
+  //if the lock is taken -> donate priority. yield.
 
   success = sema_try_down (&lock->semaphore);
   if (success)
