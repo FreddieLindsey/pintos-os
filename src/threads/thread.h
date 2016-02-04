@@ -134,6 +134,10 @@ void thread_unblock (struct thread *);
 bool thread_compare(const struct list_elem *a,
                     const struct list_elem *b,
                     void *aux);
+bool priority_compare(const struct list_elem *a,
+                      const struct list_elem *b,
+                      void *aux);
+
 
 struct thread *thread_current (void);
 tid_t thread_tid (void);

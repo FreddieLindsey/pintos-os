@@ -269,6 +269,15 @@ bool thread_compare(const struct list_elem *a,
   return thread_get_priority_of(ta) > thread_get_priority_of(tb);
 }
 
+bool priority_compare(const struct list_elem *a,
+                      const struct list_elem *b,
+                      void *aux) {
+  struct priority_elem *pa =  list_entry(a, struct priority_elem, elem);
+  struct priority_elem *pb =  list_entry(b, struct priority_elem, elem);
+
+  return pa->priority > pb->priority;
+}
+
 /* Returns the name of the running thread. */
 const char *
 thread_name (void)
@@ -558,7 +567,7 @@ void thread_add_priority(struct thread *t, int priority) {
   /* Add to the thread's own stack instead */
   struct priority_elem *p = malloc(sizeof(struct priority_elem));
   p->priority = priority;
-  list_insert_ordered(&t->priorities, &p->elem, (list_less_func*) thread_compare, NULL);
+  list_insert_ordered(&t->priorities, &p->elem, (list_less_func*) priority_compare, NULL);
 
 
 }
