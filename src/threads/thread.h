@@ -111,6 +111,7 @@ struct thread
    stack in threads */
 struct priority_elem {
   int priority;
+  struct lock *lock;
   struct list_elem elem;
 };
 
@@ -153,11 +154,9 @@ void thread_foreach (thread_action_func *, void *);
 
 int thread_get_priority (void);
 int thread_get_priority_of(struct thread *t);
-void thread_add_priority(struct thread *t, int priority);
 void thread_set_priority (int);
-void thread_donate_priority(struct thread *t, int priority);
-
-void thread_add_priority(struct thread *t, int priority);
+void thread_donate_priority(struct thread *t, int priority, struct lock *lock);
+void thread_add_priority(struct thread *t, int priority, struct lock *lock);
 
 int thread_get_nice (void);
 void thread_set_nice (int);

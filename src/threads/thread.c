@@ -552,21 +552,22 @@ init_thread (struct thread *t, const char *name, int priority)
 
 /* This function adds a priority to the priority stack and
    yields if necessary */
-void thread_donate_priority(struct thread *t, int priority) {
+void thread_donate_priority(struct thread *t, int priority, struct lock *lock) {
 
   if (priority > t->priority) {
-    thread_add_priority(t, priority);
+    thread_add_priority(t, priority, lock);
   }
   printf("New priority: %d\n", thread_get_priority_of(t));
   thread_run_top();
 }
 
 /* This function adds a priority to the priority stack */
-void thread_add_priority(struct thread *t, int priority) {
+void thread_add_priority(struct thread *t, int priority, struct lock *lock) {
 
   /* Add to the thread's own stack instead */
   struct priority_elem *p = malloc(sizeof(struct priority_elem));
   p->priority = priority;
+  p->lock = lock;
   list_insert_ordered(&t->priorities, &p->elem, (list_less_func*) priority_compare, NULL);
 
 
