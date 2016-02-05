@@ -555,11 +555,11 @@ init_thread (struct thread *t, const char *name, int priority)
 /* This function adds a priority to the priority stack and
    yields if necessary */
 void thread_donate_priority(struct thread *t, int priority, struct lock *lock) {
-
+  printf("Donation %d\n", t->priority);
   if (priority > t->priority) {
     thread_add_priority(t, priority, lock);
+    printf("Successful Donation from %s to %s\n", thread_current()->name,  t->name);
   }
-  //thread_run_top();
 }
 
 /* This function adds a priority to the priority stack */
