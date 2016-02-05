@@ -254,9 +254,9 @@ thread_unblock (struct thread *t)
   t->status = THREAD_READY;
   intr_set_level (old_level);
 
-   if (thread_current() != idle_thread) {
-     thread_run_top();
-   }
+  //  if (thread_current() != idle_thread) {
+  //    thread_run_top();
+  //  }
 }
 
 /* Compares the current priorities of the given threads */
@@ -466,6 +466,7 @@ thread_get_recent_cpu (void)
    ready list.  It is returned by next_thread_to_run() as a
    special case when the ready list is empty. */
 static void
+
 idle (void *idle_started_ UNUSED)
 {
   struct semaphore *idle_started = idle_started_;
