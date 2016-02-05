@@ -113,7 +113,7 @@ sema_up (struct semaphore *sema)
   ASSERT (sema != NULL);
 
   old_level = intr_disable ();
-  if (!list_empty (&sema->waiters))
+  while (!list_empty (&sema->waiters))
     thread_unblock (list_entry (list_pop_front (&sema->waiters),
                                 struct thread, elem));
   sema->value++;
@@ -198,10 +198,7 @@ lock_acquire (struct lock *lock)
   ASSERT (!lock_held_by_current_thread (lock));
 
   if (lock->holder != NULL) {
-    printf("Priority before: %d\n", thread_get_priority_of(lock->holder));
     thread_donate_priority(lock->holder, thread_get_priority(), lock);
-    printf("Priority after: %d\n", thread_get_priority_of(lock->holder));
-
   }
   sema_down (&lock->semaphore);
   lock->holder = thread_current ();
@@ -252,10 +249,10 @@ lock_release (struct lock *lock)
       }
     }
 
-
   lock->holder = NULL;
   sema_up (&lock->semaphore);
   thread_run_top();
+
 }
 
 /* Returns true if the current thread holds LOCK, false
