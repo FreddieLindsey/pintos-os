@@ -254,9 +254,9 @@ thread_unblock (struct thread *t)
   t->status = THREAD_READY;
   intr_set_level (old_level);
 
-  //  if (thread_current() != idle_thread) {
-  //    thread_run_top();
-  //  }
+  //if (thread_current() != idle_thread) {
+  //      thread_run_top();
+  //}
 }
 
 /* Compares the current priorities of the given threads */
@@ -558,8 +558,7 @@ void thread_donate_priority(struct thread *t, int priority, struct lock *lock) {
   if (priority > t->priority) {
     thread_add_priority(t, priority, lock);
   }
-  printf("New priority: %d\n", thread_get_priority_of(t));
-  thread_run_top();
+  //thread_run_top();
 }
 
 /* This function adds a priority to the priority stack */
