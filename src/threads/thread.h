@@ -90,7 +90,11 @@ struct thread
     uint8_t *stack;                     /* Saved stack pointer */
     int priority;                       /* Base priority of thread */
     struct list priorities;             /* Stack of donated priorities */
+    struct list donations;              /* Stack of received donations */
     struct list_elem allelem;           /* List element for all threads list. */
+    bool donated;                       /* Flag indicating whether donations have
+                                           been received since thread was last
+                                           running */
 
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
@@ -110,8 +114,9 @@ struct thread
 /* This is the struct describing a priority element in the priority
    stack in threads */
 struct priority_elem {
-  int priority;
-  struct lock *lock;
+  int priority;                        /* Actual priority value */
+  struct lock *lock;                   /* Lock for which needed to be acquired */
+  struct thread* t;                     /* Thread which received the donation */
   struct list_elem elem;
 };
 
@@ -157,6 +162,7 @@ int thread_get_priority_of(struct thread *t);
 void thread_set_priority (int);
 void thread_donate_priority(struct thread *t, int priority, struct lock *lock);
 void thread_add_priority(struct thread *t, int priority, struct lock *lock);
+void thread_redonate(struct thread *t);
 
 int thread_get_nice (void);
 void thread_set_nice (int);

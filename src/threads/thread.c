@@ -551,6 +551,9 @@ init_thread (struct thread *t, const char *name, int priority)
   t->priority = priority;
   /* This is the initialisation for the priority stack */
   list_init(&t->priorities);
+  /* This is the initialisation for the list of donations given */
+  list_init(&t->donations);
+
   sema_init(&t->sema, 0);
 
   old_level = intr_disable ();
@@ -561,24 +564,42 @@ init_thread (struct thread *t, const char *name, int priority)
 /* This function adds a priority to the priority stack and
    yields if necessary */
 void thread_donate_priority(struct thread *t, int priority, struct lock *lock) {
-  printf("Donation %d\n", t->priority);
+//  printf("Donation %d\n", t->priority);
   if (priority > t->priority) {
     thread_add_priority(t, priority, lock);
-    printf("Successful Donation from %s to %s\n", thread_current()->name,  t->name);
+    thread_redonate(t);
+  //  printf("Successful Donation from %s to %s\n", thread_current()->name,  t->name);
   }
 }
 
-/* This function adds a priority to the priority stack */
+/* This function adds a priority to the priority stack and records
+   the current thread's donation donation */
 void thread_add_priority(struct thread *t, int priority, struct lock *lock) {
-
-  /* Add to the thread's own stack instead */
   struct priority_elem *p = malloc(sizeof(struct priority_elem));
+  struct priority_elem *d = malloc(sizeof(struct priority_elem));
   p->priority = priority;
   p->lock = lock;
+  p->t = t;
+  *d = *p;
+  t->donated = true;
   list_insert_ordered(&t->priorities, &p->elem, (list_less_func*) priority_compare, NULL);
-
+  list_insert_ordered(&thread_current()->donations, &d->elem, (list_less_func*) priority_compare, NULL);
 
 }
+
+/* Donates thread t's new priority to all of the threads it has donated to */
+void thread_redonate(struct thread *t) {
+  struct list_elem *e;
+  for (e = list_begin (&t->donations); e != list_end (&t->donations);
+       e = list_next (e))
+    {
+      struct priority_elem *p = list_entry (e, struct priority_elem, elem);
+      thread_donate_priority(p->t, thread_get_priority(), p->lock);
+    }
+
+  t->donated = false;
+}
+
 
 /* Allocates a SIZE-byte frame at the top of thread T's stack and
    returns a pointer to the frame's base. */
