@@ -12,6 +12,7 @@
 #include "threads/switch.h"
 #include "threads/synch.h"
 #include "threads/vaddr.h"
+#include "threads/fixed-point.h"
 #ifdef USERPROG
 #include "userprog/process.h"
 #endif
@@ -45,6 +46,8 @@ static struct lock ready_list_lock;
 
 /* Lock used by allocate_tid(). */
 static struct lock tid_lock;
+
+
 
 /* Stack frame for kernel_thread(). */
 struct kernel_thread_frame
@@ -419,33 +422,37 @@ void thread_run_top(void) {
 
 /* Sets the current thread's nice value to NICE. */
 void
-thread_set_nice (int nice UNUSED)
+thread_set_nice (int new_nice)
 {
-  /* Not yet implemented. */
+  struct thread *t = thread_current();
+  t->nice = new_nice;
+  t->recent_cpu = thread_get_recent_cpu();
+  t->priority = PRI_MAX - fp_to_int_nearest((DIV_FP_INT(t->recent_cpu,
+    4)), FIXED_BASE) - (t->nice * 2);
 }
 
 /* Returns the current thread's nice value. */
 int
 thread_get_nice (void)
 {
-  /* Not yet implemented. */
-  return 0;
+  return thread_current()->nice;
 }
 
 /* Returns 100 times the system load average. */
 int
 thread_get_load_avg (void)
 {
-  /* Not yet implemented. */
-  return 0;
+  int ready_threads = list_size(&ready_list) + thread_current() != idle_thread ? 1 : 0;
+  return MUL_FP_FP((59/60) * FIXED_BASE, load_avg, FIXED_BASE) + MUL_FP_INT((1/60) * FIXED_BASE,ready_threads);
 }
 
 /* Returns 100 times the current thread's recent_cpu value. */
 int
 thread_get_recent_cpu (void)
 {
-  /* Not yet implemented. */
-  return 0;
+  struct thread *t = thread_current();
+  int double_load = MUL_FP_INT(load_avg, 2);
+  return ADD_FP_INT(MUL_FP_FP(DIV_FP_FP(double_load,(ADD_FP_INT(double_load, 1, FIXED_BASE)), FIXED_BASE), t->recent_cpu, FIXED_BASE), t->nice, FIXED_BASE);
 }
 
 /* Idle thread.  Executes when no other thread is ready to run.
@@ -465,7 +472,8 @@ idle (void *idle_started_ UNUSED)
   idle_thread = thread_current ();
   sema_up (idle_started);
   for (;;)
-    {      /* Let someone else run. */
+    {
+      /* Let someone else run. */
       intr_disable ();
       thread_block ();
 
@@ -590,7 +598,6 @@ void thread_redonate(struct thread *t) {
 
   t->donated = false;
 }
-
 
 /* Allocates a SIZE-byte frame at the top of thread T's stack and
    returns a pointer to the frame's base. */

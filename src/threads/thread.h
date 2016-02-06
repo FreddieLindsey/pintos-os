@@ -92,9 +92,8 @@ struct thread
     struct list priorities;             /* Stack of donated priorities */
     struct list donations;              /* Stack of received donations */
     struct list_elem allelem;           /* List element for all threads list */
-    bool donated;                       /* Flag indicating whether donations 
-                                           have been received since thread was
-                                           last running */
+    int nice;
+    int recent_cpu;
 
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
@@ -124,6 +123,9 @@ struct priority_elem {
    If true, use multi-level feedback queue scheduler.
    Controlled by kernel command-line option "-o mlfqs". */
 extern bool thread_mlfqs;
+/* Current load_avg */
+int load_avg;
+
 
 void thread_init (void);
 void thread_start (void);
