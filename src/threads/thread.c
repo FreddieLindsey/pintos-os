@@ -21,6 +21,11 @@
    of thread.h for details. */
 #define THREAD_MAGIC 0xcd6abf4b
 
+#define max(a,b) \
+   ({ __typeof__ (a) _a = (a); \
+       __typeof__ (b) _b = (b); \
+     _a > _b ? _a : _b; })
+
 /* List of processes in THREAD_READY state, that is, processes
    that are ready to run but not actually running. */
 static struct list ready_list;
@@ -378,9 +383,9 @@ thread_set_priority (int new_priority)
 
   struct thread *t = thread_current();
 
-  if (list_empty(&t->priorities)) {
+  //if (list_empty(&t->priorities)) {
     t->priority = new_priority;
-  } else {
+  /*} else {
     lock_acquire(&ready_list_lock);
 
     int old_priority = thread_get_priority();
@@ -393,6 +398,7 @@ thread_set_priority (int new_priority)
     }
     lock_release(&ready_list_lock);
   }
+  */
   thread_run_top();
 
 }
@@ -412,7 +418,7 @@ int thread_get_priority_of(struct thread *t) {
     return t->priority;
   } else {
     struct list_elem *front = list_front(&t->priorities);
-    return list_entry(front, struct priority_elem, elem)->priority;
+    return max(t->priority, list_entry(front, struct priority_elem, elem)->priority);
   }
 }
 
