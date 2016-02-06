@@ -216,7 +216,7 @@ thread_create (const char *name, int priority,
 
   intr_set_level (old_level);
 
-  /* Add to run queue. */
+  /* Add to ready queue. */
   thread_unblock (t);
   thread_run_top();
 
@@ -260,9 +260,6 @@ thread_unblock (struct thread *t)
   t->status = THREAD_READY;
   intr_set_level (old_level);
 
-  //if (thread_current() != idle_thread) {
-  //      thread_run_top();
-  //}
 }
 
 /* Compares the current priorities of the given threads */
@@ -350,7 +347,6 @@ thread_yield (void)
 
   old_level = intr_disable ();
   if (cur != idle_thread)
-    //list_push_back (&ready_list, &cur->elem);
     list_insert_ordered(&ready_list, &cur->elem, (list_less_func*) thread_compare, NULL);
   cur->status = THREAD_READY;
   schedule ();
@@ -382,23 +378,7 @@ thread_set_priority (int new_priority)
   ASSERT (new_priority <= PRI_MAX);
 
   struct thread *t = thread_current();
-
-  //if (list_empty(&t->priorities)) {
-    t->priority = new_priority;
-  /*} else {
-    lock_acquire(&ready_list_lock);
-
-    int old_priority = thread_get_priority();
-    struct list_elem *e = list_front(&t->priorities);
-    struct priority_elem *front = list_entry(e, struct priority_elem, elem);
-    front->priority = new_priority;
-
-    if (new_priority < old_priority) {
-      list_sort(&ready_list, (list_less_func*) thread_compare, NULL);
-    }
-    lock_release(&ready_list_lock);
-  }
-  */
+  t->priority = new_priority;
   thread_run_top();
 
 }
@@ -564,11 +544,9 @@ init_thread (struct thread *t, const char *name, int priority)
 /* This function adds a priority to the priority stack and
    yields if necessary */
 void thread_donate_priority(struct thread *t, int priority, struct lock *lock) {
-//  printf("Donation %d\n", t->priority);
   if (priority > t->priority) {
     thread_add_priority(t, priority, lock);
     thread_redonate(t);
-  //  printf("Successful Donation from %s to %s\n", thread_current()->name,  t->name);
   }
 }
 
