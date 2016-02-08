@@ -68,7 +68,8 @@ sema_down (struct semaphore *sema)
   old_level = intr_disable ();
   while (sema->value == 0)
     {
-      list_insert_ordered(&sema->waiters, &thread_current ()->elem, (list_less_func*)thread_compare, NULL);
+      list_insert_ordered(&sema->waiters, &thread_current ()->elem, 
+          (list_less_func*)thread_compare, NULL);
       thread_block ();
     }
   sema->value--;
@@ -282,6 +283,7 @@ cond_init (struct condition *cond)
   ASSERT (cond != NULL);
 
   list_init (&cond->waiters);
+  cond->sorted = true;
 }
 
 /* Atomically releases LOCK and waits for COND to be signaled by
@@ -316,6 +318,7 @@ cond_wait (struct condition *cond, struct lock *lock)
 
   sema_init (&waiter.semaphore, 0);
   list_push_back(&cond->waiters, &waiter.elem);
+  cond->sorted = false; // List no longer sorted
   lock_release (lock);
   sema_down (&waiter.semaphore);
   lock_acquire (lock);
@@ -335,6 +338,12 @@ cond_signal (struct condition *cond, struct lock *lock UNUSED)
   ASSERT (lock != NULL);
   ASSERT (!intr_context ());
   ASSERT (lock_held_by_current_thread (lock));
+
+  // If the list is not sorted, sort it
+  if (!cond->sorted) {
+    list_sort(&cond->waiters, (list_less_func*) sema_compare, NULL);
+    cond->sorted = true;
+  }
 
   if (!list_empty (&cond->waiters))
     sema_up (&list_entry (list_pop_front (&cond->waiters),
@@ -356,3 +365,32 @@ cond_broadcast (struct condition *cond, struct lock *lock)
   while (!list_empty (&cond->waiters))
     cond_signal (cond, lock);
 }
+
+/* Fits list_less_func template.
+   Order semaphore_elem based on the priority of the thread at the head
+   of the semaphore's waiting list. */
+bool sema_compare (const struct list_elem *a,
+                    const struct list_elem *b,
+                    void *aux) {
+  struct semaphore_elem *sa = list_entry(a, struct semaphore_elem, elem);
+  struct semaphore_elem *sb = list_entry(b, struct semaphore_elem, elem);
+
+  struct list *la = &(sa->semaphore).waiters;
+  struct list *lb = &(sb->semaphore).waiters;
+
+  // NULL <= b
+  if (list_empty(la)) {
+    return false;
+  }
+  
+  // a > NULL
+  if (list_empty(lb)) {
+    return true;
+  }
+
+  struct thread *ta = list_entry(list_front(la), struct thread, elem);
+  struct thread *tb = list_entry(list_front(lb), struct thread, elem);
+
+  return thread_get_priority_of(ta) > thread_get_priority_of(tb);
+}
+
