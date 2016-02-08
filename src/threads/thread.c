@@ -442,8 +442,13 @@ thread_get_nice (void)
 int
 thread_get_load_avg (void)
 {
-  int ready_threads = list_size(&ready_list) + thread_current() != idle_thread ? 1 : 0;
-  return MUL_FP_FP((59/60) * FIXED_BASE, load_avg, FIXED_BASE) + MUL_FP_INT((1/60) * FIXED_BASE,ready_threads);
+  /* The number of current and ready threads not including idle_thread */
+  int curr_not_idle = thread_current() != idle_thread ? 1 : 0;
+  int ready_threads = list_size(&ready_list) + curr_not_idle;
+  
+  int load_avg_portion = MUL_FP_FP((59/60) * FIXED_BASE, load_avg, FIXED_BASE);
+  int ready_threads_portion = MUL_FP_INT((1/60) * FIXED_BASE,ready_threads);
+  return  load_avg_portion + ready_threads_portion;
 }
 
 /* Returns 100 times the current thread's recent_cpu value. */
@@ -452,7 +457,10 @@ thread_get_recent_cpu (void)
 {
   struct thread *t = thread_current();
   int double_load = MUL_FP_INT(load_avg, 2);
-  return ADD_FP_INT(MUL_FP_FP(DIV_FP_FP(double_load,(ADD_FP_INT(double_load, 1, FIXED_BASE)), FIXED_BASE), t->recent_cpu, FIXED_BASE), t->nice, FIXED_BASE);
+  int double_load_plus_one = ADD_FP_INT(double_load, 1, FIXED_BASE);
+  int load_div = DIV_FP_FP(double_load, double_load_plus_one, FIXED_BASE);
+  int load_rcpu = MUL_FP_FP(load_div, t->recent_cpu, FIXED_BASE);
+  return ADD_FP_INT(load_rcpu, t->nice, FIXED_BASE);
 }
 
 /* Idle thread.  Executes when no other thread is ready to run.
