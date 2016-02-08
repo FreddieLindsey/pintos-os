@@ -17,6 +17,7 @@
 #error TIMER_FREQ <= 1000 recommended
 #endif
 
+
 /* Number of timer ticks since OS booted. */
 static int64_t ticks;
 
@@ -178,13 +179,20 @@ timer_interrupt (struct intr_frame *args UNUSED)
   thread_tick ();
   if(timer_ticks () % TIMER_FREQ == 0) {
     load_avg = thread_get_load_avg();
+
+    enum intr_level old_level = intr_disable();
+    thread_foreach(thread_calculate_cpu, 0);
+    intr_set_level(old_level);
   }
+
+  increment_r_cpu();
+
   enum intr_level old_level = intr_disable();
   thread_foreach(notify, 0);
   intr_set_level(old_level);
 }
 
-static void notify(struct thread *t, void *aux) {
+static void notify(struct thread *t, void *aux UNUSED) {
 
   if (t->status == THREAD_BLOCKED && t->sleep_until <= timer_ticks()) {
     sema_up(&t->sema);
