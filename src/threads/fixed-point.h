@@ -4,9 +4,9 @@
 
 #include <inttypes.h>
 
-#define INT_TO_FP(n, f) ((n) * (f))   
+#define INT_TO_FP(n, f) ((n) * (f))
 #define FP_TO_INT(x, f) ((x) / (f))
-#define ADD_FP_FP(x, y) ((x) + (y)) 
+#define ADD_FP_FP(x, y) ((x) + (y))
 #define ADD_FP_INT(x, n, f) ((x) + ((n)*(f)))
 #define SUB_FP_FP(x, y) ((x) - (y))
 #define SUB_FP_INT(x, n, f) ((x) - ((n)*(f)))
@@ -24,4 +24,3 @@ int fp_to_int_nearest(int x, int f) {
 }
 
 #endif
-
