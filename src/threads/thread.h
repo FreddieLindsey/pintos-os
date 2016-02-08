@@ -168,6 +168,7 @@ void thread_donate_priority(struct thread *t, int priority, struct lock *lock);
 void thread_add_priority(struct thread *t, int priority, struct lock *lock);
 void thread_redonate(struct thread *t);
 
+void thread_calculate_priority(struct thread *t);
 int thread_get_nice (void);
 void thread_set_nice (int);
 int thread_get_recent_cpu (void);

@@ -217,8 +217,6 @@ thread_create (const char *name, int priority,
   sf = alloc_frame (t, sizeof *sf);
   sf->eip = switch_entry;
   sf->ebp = 0;
-  t->nice = thread_current()->nice;
-  t->recent_cpu = thread_current()->recent_cpu;
 
   intr_set_level (old_level);
 
@@ -431,10 +429,14 @@ thread_set_nice (int new_nice)
 
   struct thread *t = thread_current();
   t->nice = new_nice;
-  t->recent_cpu = thread_get_recent_cpu();
+  thread_calculate_priority(t);
+}
+
+void thread_calculate_priority(struct thread *t) {
   t->priority = PRI_MAX - fp_to_int_nearest((DIV_FP_INT(t->recent_cpu,
     4)), FIXED_BASE) - (t->nice * 2);
 }
+
 
 /* Returns the current thread's nice value. */
 int
@@ -460,7 +462,7 @@ thread_get_load_avg (void)
 int
 thread_get_recent_cpu (void)
 {
-  return fp_to_int_nearest(thread_current()->recent_cpu, FIXED_BASE);
+  return fp_to_int_nearest(thread_current()->recent_cpu * 100, FIXED_BASE);
 }
 
 /* Calculates the new recent_cpu of thread t */
@@ -565,8 +567,14 @@ init_thread (struct thread *t, const char *name, int priority)
   t->status = THREAD_BLOCKED;
   strlcpy (t->name, name, sizeof t->name);
   t->stack = (uint8_t *) t + PGSIZE;
+  if (thread_mlfqs) {
+    t->nice = thread_current()->nice;
+    t->recent_cpu = thread_current()->recent_cpu;
+    thread_calculate_priority(t);
+  } else {
+    t->priority = priority;
+  }
   t->magic = THREAD_MAGIC;
-  t->priority = priority;
   /* This is the initialisation for the priority stack */
   list_init(&t->priorities);
   /* This is the initialisation for the list of donations given */
