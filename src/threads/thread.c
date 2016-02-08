@@ -382,6 +382,9 @@ thread_foreach (thread_action_func *func, void *aux)
 void
 thread_set_priority (int new_priority)
 {
+
+  // TODO: if ‘-mlfqs’ set any call to this function should do nothing
+
   ASSERT (new_priority >= PRI_MIN);
   ASSERT (new_priority <= PRI_MAX);
 
@@ -412,7 +415,7 @@ int thread_get_priority_of(struct thread *t) {
 
 /* Ensure the running thread is the one at the top of the ordered list */
 void thread_run_top(void) {
-  // Compare with head since list ordered by greatest priority.
+  /* Compare with head since list ordered by greatest priority. */
   struct thread *max = list_entry(list_begin(&ready_list), struct thread, elem);
 
   if (thread_get_priority() < thread_get_priority_of(max)) {

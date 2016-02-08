@@ -177,6 +177,9 @@ timer_interrupt (struct intr_frame *args UNUSED)
 {
   ticks++;
   thread_tick ();
+
+  /* update load_avg at every multiple of a second
+     it also recalculates recent_cpu using the formula */
   if(timer_ticks () % TIMER_FREQ == 0) {
     load_avg = thread_get_load_avg();
 
@@ -185,6 +188,10 @@ timer_interrupt (struct intr_frame *args UNUSED)
     intr_set_level(old_level);
   }
 
+  /* at every tick increment recent_cpu of current thread */
+
+  // TODO: SHOULDN'T WE BEING UPDATING THE PRIORITY EVERYTIME THE
+  // RECENT CPU CHANGES TOO, OR JUST EVERY FOUR TICKS?
   increment_r_cpu();
 
   enum intr_level old_level = intr_disable();
