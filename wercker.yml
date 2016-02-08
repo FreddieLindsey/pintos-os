@@ -2,10 +2,18 @@ box: freddielindsey/pintos
 
 build:
   steps:
+    - script: Check tools available
+      code: |
+        echo $PATH
+        which pintos
     - script:
       name: Compiling src/devices
       code: |
         make -C src/devices
+    - script:
+      name: Testing src/devices
+      code: |
+        make -C src/devices check
     - script:
       name: Testing src/threads/fixed-point
       code: |
@@ -23,12 +31,6 @@ build:
 
 deploy:
   steps:
-    - script:
-      name: Testing src/devices
-      code: |
-        make -C src/devices check
-    - script:
-      name: Code checked successfully!
     - add-to-known_hosts:
         hostname: gitlab.doc.ic.ac.uk
     - mktemp:
