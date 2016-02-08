@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include "synch.h"
 
+
 /* States in a thread's life cycle. */
 enum thread_status
   {
@@ -24,6 +25,7 @@ typedef int tid_t;
 #define PRI_MIN 0                       /* Lowest priority. */
 #define PRI_DEFAULT 31                  /* Default priority. */
 #define PRI_MAX 63                      /* Highest priority. */
+
 
 /* A kernel thread or user process.
 
@@ -169,6 +171,8 @@ void thread_redonate(struct thread *t);
 int thread_get_nice (void);
 void thread_set_nice (int);
 int thread_get_recent_cpu (void);
+void thread_calculate_cpu (struct thread *t);
+void increment_r_cpu(void) ;
 int thread_get_load_avg (void);
 
 #endif /* threads/thread.h */

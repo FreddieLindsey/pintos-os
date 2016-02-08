@@ -217,6 +217,8 @@ thread_create (const char *name, int priority,
   sf = alloc_frame (t, sizeof *sf);
   sf->eip = switch_entry;
   sf->ebp = 0;
+  t->nice = thread_current()->nice;
+  t->recent_cpu = thread_current()->recent_cpu;
 
   intr_set_level (old_level);
 
@@ -424,6 +426,9 @@ void thread_run_top(void) {
 void
 thread_set_nice (int new_nice)
 {
+  ASSERT (new_nice <= 20);
+  ASSERT (new_nice >= -20);
+
   struct thread *t = thread_current();
   t->nice = new_nice;
   t->recent_cpu = thread_get_recent_cpu();
@@ -445,22 +450,34 @@ thread_get_load_avg (void)
   /* The number of current and ready threads not including idle_thread */
   int curr_not_idle = thread_current() != idle_thread ? 1 : 0;
   int ready_threads = list_size(&ready_list) + curr_not_idle;
-  
+
   int load_avg_portion = MUL_FP_FP((59/60) * FIXED_BASE, load_avg, FIXED_BASE);
   int ready_threads_portion = MUL_FP_INT((1/60) * FIXED_BASE,ready_threads);
-  return  load_avg_portion + ready_threads_portion;
+  return load_avg_portion + ready_threads_portion;
 }
 
 /* Returns 100 times the current thread's recent_cpu value. */
 int
 thread_get_recent_cpu (void)
 {
-  struct thread *t = thread_current();
+  return fp_to_int_nearest(thread_current()->recent_cpu, FIXED_BASE);
+}
+
+/* Calculates the new recent_cpu of thread t */
+void thread_calculate_cpu (struct thread *t) {
   int double_load = MUL_FP_INT(load_avg, 2);
   int double_load_plus_one = ADD_FP_INT(double_load, 1, FIXED_BASE);
   int load_div = DIV_FP_FP(double_load, double_load_plus_one, FIXED_BASE);
   int load_rcpu = MUL_FP_FP(load_div, t->recent_cpu, FIXED_BASE);
-  return ADD_FP_INT(load_rcpu, t->nice, FIXED_BASE);
+  int new_recent_cpu = ADD_FP_INT(load_rcpu, t->nice, FIXED_BASE);
+  t->recent_cpu = new_recent_cpu;
+}
+
+void increment_r_cpu() {
+  if (thread_current() != idle_thread) {
+    int inc_cpu = ADD_FP_INT(thread_current()->recent_cpu, 1, FIXED_BASE);
+    thread_current()->recent_cpu = inc_cpu;
+  }
 }
 
 /* Idle thread.  Executes when no other thread is ready to run.
