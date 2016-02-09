@@ -554,10 +554,16 @@ void thread_donate_priority(struct thread *t, int priority, struct lock *lock) {
 }
 
 /* This function adds a priority to the priority stack and records
-   the current thread's donation donation */
+   the current thread's donation */
 void thread_add_priority(struct thread *t, int priority, struct lock *lock) {
+  // Allocate memory for priorities
   struct priority_elem *p = malloc(sizeof(struct priority_elem));
   struct priority_elem *d = malloc(sizeof(struct priority_elem));
+  // Check if malloc has failed, in which case exit
+  if (!p || !d) {
+    exit(EXIT_FAILURE);
+  }
+  // Adds priority to donor's donations and to receiver's priorities
   p->priority = priority;
   p->lock = lock;
   p->t = t;
