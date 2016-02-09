@@ -21,6 +21,21 @@ $ wercker build
 
 This will test using the most recent testing file (wercker.yml).
 
+To add to the test file, let's say you have a sequence of commands to test a part of the codebase, you need to append them to the appropriate place in the build steps as below:
+
+```
+build:
+  steps:
+    ...
+    - script:
+      name: <TESTING COMMENT>
+      code: |
+        <COMMAND 1>
+        <COMMAND 2>
+        <COMMAND 3>
+    ...
+```
+
 ### Team
 
 Freddie Lindsey, Oliver Norton, James Lane, Elias Benussi
