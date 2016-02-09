@@ -105,6 +105,9 @@ scheduler.
 >> Why did you choose this design?  In what ways is it superior to
 >> another design you considered?
 
+Other design considered: easier release of locks, no lock in priority 
+leads to n squared
+
               ADVANCED SCHEDULER
               ==================
 
@@ -158,4 +161,4 @@ ticks   A   B   C   A   B   C   to run
 >> decide to implement it the way you did?  If you created an
 >> abstraction layer for fixed-point mathematics, that is, an abstract
 >> data type and/or a set of functions or macros to manipulate
->> fixed-point numbers, why did you do so?  If not, why not?S
+>> fixed-point numbers, why did you do so?  If not, why not?
