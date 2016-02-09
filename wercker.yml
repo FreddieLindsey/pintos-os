@@ -4,8 +4,9 @@ build:
   steps:
     - script: Check tools available
       code: |
-        echo $PATH
-        which pintos
+        export PATH="$(pwd)/src/utils:$PATH"
+        echo -e "CWD:\t$(pwd)"
+        echo -e "Pintos:\t$(which pintos)"
     - script:
       name: Compiling src/devices
       code: |
@@ -58,4 +59,4 @@ deploy:
   after-steps:
     - slack-notifier:
       url: $SLACK_URL
-      username: wercker deployment
+      username: wercker_deployment
