@@ -14,8 +14,8 @@
 #define MUL_FP_FP(x, y, f) ((((int64_t)(x)) * (y))/(f))
 #define DIV_FP_INT(x, n) ((x) / (n))
 #define DIV_FP_FP(x, y, f) ((((int64_t)(x)) * (f))/(y))
-/* This is the f value in fixed_point arithmetic */
-#define FIXED_BASE (2 << 17)
+/* This is the f value (14) in fixed_point arithmetic */
+#define FIXED_BASE 16384
 
 int fp_to_int_nearest(int x, int f) {
   if (x >= 0)

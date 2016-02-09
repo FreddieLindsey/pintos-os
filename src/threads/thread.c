@@ -26,6 +26,11 @@
    ({ __typeof__ (a) _a = (a); \
        __typeof__ (b) _b = (b); \
      _a > _b ? _a : _b; })
+#define LOAD_AVG_RATIO 16111         /* 59/60 * 2^14 */
+#define READY_THREADS_RATIO 273       /* 1/60 * 2^14 */
+
+/* Current load_average */
+static int load_average = 0;
 
 /* List of processes in THREAD_READY state, that is, processes
    that are ready to run but not actually running. */
@@ -63,7 +68,6 @@ static long long kernel_ticks;  /* # of timer ticks in kernel threads. */
 static long long user_ticks;    /* # of timer ticks in user programs. */
 
 /* Scheduling. */
-#define TIME_SLICE 4            /* # of timer ticks to give each thread. */
 static unsigned thread_ticks;   /* # of timer ticks since last yield. */
 
 /* If false (default), use round-robin scheduler.
@@ -444,6 +448,7 @@ thread_set_nice (int new_nice)
   struct thread *t = thread_current();
   t->nice = new_nice;
   thread_calculate_priority(t);
+  thread_run_top();
 }
 
 void thread_calculate_priority(struct thread *t) {
@@ -462,13 +467,19 @@ thread_get_nice (void)
 int
 thread_get_load_avg (void)
 {
+  return fp_to_int_nearest(load_average * 100, FIXED_BASE);
+}
+
+/* calculates and sets the load_avg */
+void thread_calculate_load_avg() {
   /* The number of current and ready threads not including idle_thread */
   int curr_not_idle = thread_current() != idle_thread ? 1 : 0;
   int ready_threads = list_size(&ready_list) + curr_not_idle;
 
-  int load_avg_portion = MUL_FP_FP((59/60) * FIXED_BASE, load_avg, FIXED_BASE);
-  int ready_threads_portion = MUL_FP_INT((1/60) * FIXED_BASE,ready_threads);
-  return load_avg_portion + ready_threads_portion;
+  int load_avg_portion = MUL_FP_FP(LOAD_AVG_RATIO, load_average, FIXED_BASE);
+  int ready_threads_portion = MUL_FP_INT(READY_THREADS_RATIO, ready_threads);
+  load_average = load_avg_portion + ready_threads_portion;
+
 }
 
 /* Returns 100 times the current thread's recent_cpu value. */
@@ -480,7 +491,7 @@ thread_get_recent_cpu (void)
 
 /* Calculates the new recent_cpu of thread t */
 void thread_calculate_cpu (struct thread *t) {
-  int double_load = MUL_FP_INT(load_avg, 2);
+  int double_load = MUL_FP_INT(load_average, 2);
   int double_load_plus_one = ADD_FP_INT(double_load, 1, FIXED_BASE);
   int load_div = DIV_FP_FP(double_load, double_load_plus_one, FIXED_BASE);
   int load_rcpu = MUL_FP_FP(load_div, t->recent_cpu, FIXED_BASE);
@@ -581,8 +592,16 @@ init_thread (struct thread *t, const char *name, int priority)
   strlcpy (t->name, name, sizeof t->name);
   t->stack = (uint8_t *) t + PGSIZE;
   if (thread_mlfqs) {
-    t->nice = thread_current()->nice;
-    t->recent_cpu = thread_current()->recent_cpu;
+
+    /* If this is the first thread, initialise to zero
+      otherwise, inherit from parent thread. */
+    if (strcmp(t->name,"main") == 0) {
+      t->nice = 0;
+      t->recent_cpu = 0;
+    } else {
+      t->nice = thread_current()->nice;
+      t->recent_cpu = thread_current()->recent_cpu;
+    }
     thread_calculate_priority(t);
   } else {
     t->priority = priority;

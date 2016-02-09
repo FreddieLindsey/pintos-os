@@ -26,7 +26,7 @@ typedef int tid_t;
 #define PRI_DEFAULT 31                  /* Default priority. */
 #define PRI_MAX 63                      /* Highest priority. */
 
-#define TIME_SLICE 4            /* # of timer ticks to give each thread. */
+#define TIME_SLICE 4
 
 /* A kernel thread or user process.
 
@@ -126,8 +126,6 @@ struct priority_elem {
    If true, use multi-level feedback queue scheduler.
    Controlled by kernel command-line option "-o mlfqs". */
 extern bool thread_mlfqs;
-/* Current load_avg */
-int load_avg;
 
 
 void thread_init (void);

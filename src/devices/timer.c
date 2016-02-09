@@ -182,7 +182,7 @@ timer_interrupt (struct intr_frame *args UNUSED)
   /* update load_avg at every multiple of a second
      it also recalculates recent_cpu using the formula */
   if(timer_ticks () % TIMER_FREQ == 0) {
-    load_avg = thread_get_load_avg();
+    thread_calculate_load_avg();
 
     enum intr_level old_level = intr_disable();
     thread_foreach(thread_calculate_cpu, 0);
