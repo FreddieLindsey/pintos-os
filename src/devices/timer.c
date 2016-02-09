@@ -18,6 +18,7 @@
 #endif
 
 
+
 /* Number of timer ticks since OS booted. */
 static int64_t ticks;
 
@@ -185,6 +186,12 @@ timer_interrupt (struct intr_frame *args UNUSED)
 
     enum intr_level old_level = intr_disable();
     thread_foreach(thread_calculate_cpu, 0);
+    intr_set_level(old_level);
+  }
+
+  if(timer_ticks() % TIME_SLICE == 0) {
+    enum intr_level old_level = intr_disable();
+    thread_foreach(thread_calculate_priority, 0);
     intr_set_level(old_level);
   }
 
