@@ -87,9 +87,14 @@ struct thread
     tid_t tid;                          /* Thread identifier. */
     enum thread_status status;          /* Thread state. */
     char name[16];                      /* Name (for debugging purposes). */
-    uint8_t *stack;                     /* Saved stack pointer. */
-    int priority;                       /* Priority. */
-    struct list_elem allelem;           /* List element for all threads list. */
+    uint8_t *stack;                     /* Saved stack pointer */
+    int priority;                       /* Base priority of thread */
+    struct list priorities;             /* Stack of donated priorities */
+    struct list donations;              /* Stack of received donations */
+    struct list_elem allelem;           /* List element for all threads list */
+    bool donated;                       /* Flag indicating whether donations 
+                                           have been received since thread was
+                                           last running */
 
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
@@ -105,6 +110,15 @@ struct thread
     /* Owned by thread.c. */
     unsigned magic;                     /* Detects stack overflow. */
   };
+
+/* This is the struct describing a priority element in the priority
+   stack in threads */
+struct priority_elem {
+  int priority;                        /* Actual priority value */
+  struct lock *lock;                   /* Lock for which needed to be acquired */
+  struct thread* t;                     /* Thread which received the donation */
+  struct list_elem elem;
+};
 
 /* If false (default), use round-robin scheduler.
    If true, use multi-level feedback queue scheduler.
@@ -126,6 +140,10 @@ void thread_unblock (struct thread *);
 bool thread_compare(const struct list_elem *a,
                     const struct list_elem *b,
                     void *aux);
+bool priority_compare(const struct list_elem *a,
+                      const struct list_elem *b,
+                      void *aux);
+
 
 struct thread *thread_current (void);
 tid_t thread_tid (void);
@@ -140,7 +158,11 @@ typedef void thread_action_func (struct thread *t, void *aux);
 void thread_foreach (thread_action_func *, void *);
 
 int thread_get_priority (void);
+int thread_get_priority_of(struct thread *t);
 void thread_set_priority (int);
+void thread_donate_priority(struct thread *t, int priority, struct lock *lock);
+void thread_add_priority(struct thread *t, int priority, struct lock *lock);
+void thread_redonate(struct thread *t);
 
 int thread_get_nice (void);
 void thread_set_nice (int);

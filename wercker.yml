@@ -8,6 +8,11 @@ build:
         echo -e "CWD:\t$(pwd)"
         echo -e "Pintos:\t$(which pintos)"
     - script:
+      name: Check tools available
+      code: |
+        echo $PATH
+        which pintos
+    - script:
       name: Compiling src/devices
       code: |
         make -C src/devices
