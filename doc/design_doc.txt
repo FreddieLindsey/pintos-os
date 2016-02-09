@@ -38,7 +38,7 @@ Elias Benussi    <eb1314@imperial.ac.uk>
 
 We chose a stack ordered according to decreasing priorities. This 
 allowed the thread to result having always the highest priority 
-possible.
+possible on top of the stack allowing quick retrieval.
 
 ---- ALGORITHMS ----
 
@@ -63,20 +63,15 @@ Assuming the current low priority thread L held the lock A needed by
 the highest priority thread H which is currently running and called
 lock_acquire(). First H checks whether someone else is holding A and 
 once identified the holder it calls thread_donate_priority() to donate
-its priority. It also passes the current lock so that L will have memory 
-in its stack of what lock was the donated priority related to.
+its priority. It also adds the holder to its list of donations (threads 
+that received priority from it)passes the current lock so that L will have 
+memory in its stack of what lock was the donated priority related to.
 Thread_donate_priority() first checks that the donated priority is higher 
 than L's base priority (otherwise it wouldn't make sense to donate it). 
 It then adds it in order to the priority stack.
-It is worth mentioning here that a stricter check could be applied 
-making so that rather than add any element, if there already is a 
-priority related to lock A in the stack its value is updated. If the new 
-value is higher then it gets substituted, otherwise it is left as it is.
-Our solution grants faster donation but it's then slower in releasing a
-lock as all priorities related to it have to be removed from the priority
-stack.
 Nested donation is handled by the call to thread_redonate(t) which 
-donates thread t's new priority to all of the threads it has donated to.
+donates thread t's new priority to all of the threads it has donated to,
+iterating through the donations list.
 
 >> A5: (5 marks)
 >> Describe the sequence of events when lock_release() is called
@@ -105,8 +100,14 @@ scheduler.
 >> Why did you choose this design?  In what ways is it superior to
 >> another design you considered?
 
-Other design considered: easier release of locks, no lock in priority 
-leads to n squared
+One of the choices we had to make regarded thread_donate_priority() that 
+checks the donated priority is higher than the base priority.
+A stricter way would be to check whether there is already a 
+priority related to the lock in question in the stack and update its
+value if the new value is higher.
+Our solution grants faster donation but it's then slower in releasing a
+lock as all priorities related to it have to be removed from the priority
+stack.
 
               ADVANCED SCHEDULER
               ==================
@@ -154,6 +155,8 @@ ticks   A   B   C   A   B   C   to run
 >> B5: (5 marks)
 >> Briefly critique your design, pointing out advantages and
 >> disadvantages in your design choices.
+
+Representing the list of ready threads we used a single queue ordered by decreasing priority rather than an array of queues for every priority. As a result when changing the priority of a thread the list had to be sorted. This has some cost given that the priority of every thread is recalculated every 4 clock-ticks and the sorting has a worst-case complexity of nlogn. Implementing the other solution would have had the advantage that when recalculating a thread's priority would only require to remove the thread from the old priority queue and insert it into the new priority queue. Given that insertion would consist in a push (constant cost) the worst-case complexity would depend on the removal, which has worst-case complexity n. Although aware of the trade off in performance we chose our implementation because it would make the code much easier to read.
 
 >> B6: (5 marks)
 >> The assignment explains arithmetic for fixed-point mathematics in
