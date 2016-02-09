@@ -78,6 +78,7 @@ static bool is_thread (struct thread *) UNUSED;
 static void *alloc_frame (struct thread *, size_t size);
 static void schedule (void);
 void thread_schedule_tail (struct thread *prev);
+void free_priority_list(struct list *l);
 static tid_t allocate_tid (void);
 
 /* Initializes the threading system by transforming the code
@@ -561,7 +562,7 @@ void thread_add_priority(struct thread *t, int priority, struct lock *lock) {
   struct priority_elem *d = malloc(sizeof(struct priority_elem));
   // Check if malloc has failed, in which case exit
   if (!p || !d) {
-    exit(EXIT_FAILURE);
+    thread_exit();
   }
   // Adds priority to donor's donations and to receiver's priorities
   p->priority = priority;
@@ -660,8 +661,18 @@ thread_schedule_tail (struct thread *prev)
     {
       ASSERT (prev != cur);
       //TODO: need to free the stack of priorities.
+      free_priority_list(&prev->priorities);
+      free_priority_list(&prev->donations);
       palloc_free_page (prev);
     }
+}
+
+void free_priority_list(struct list *l) {
+  while (!list_empty(l)) {
+    struct list_elem *e = list_pop_front(l);
+    struct priority_elem *p =  list_entry(e, struct priority_elem, elem);
+    free(p);
+  }
 }
 
 /* Schedules a new process.  At entry, interrupts must be off and

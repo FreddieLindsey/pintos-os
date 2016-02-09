@@ -91,10 +91,10 @@ struct thread
     int priority;                       /* Base priority of thread */
     struct list priorities;             /* Stack of donated priorities */
     struct list donations;              /* Stack of received donations */
-    struct list_elem allelem;           /* List element for all threads list. */
-    bool donated;                       /* Flag indicating whether donations have
-                                           been received since thread was last
-                                           running */
+    struct list_elem allelem;           /* List element for all threads list */
+    bool donated;                       /* Flag indicating whether donations 
+                                           have been received since thread was
+                                           last running */
 
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
