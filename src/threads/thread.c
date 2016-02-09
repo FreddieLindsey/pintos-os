@@ -383,7 +383,9 @@ void
 thread_set_priority (int new_priority)
 {
 
-  // TODO: if ‘-mlfqs’ set any call to this function should do nothing
+  if (thread_mlfqs)
+    return;
+
 
   ASSERT (new_priority >= PRI_MIN);
   ASSERT (new_priority <= PRI_MAX);
@@ -413,6 +415,15 @@ int thread_get_priority_of(struct thread *t) {
   }
 }
 
+/* Calculates the priority based off of the advanced scheduler */
+void thread_calculate_priority(struct thread *t) {
+  t->priority = PRI_MAX - fp_to_int_nearest((DIV_FP_INT(t->recent_cpu,
+    4)), FIXED_BASE) - (t->nice * 2);
+
+  list_sort(&ready_list, (list_less_func*) thread_compare, NULL);
+}
+
+
 /* Ensure the running thread is the one at the top of the ordered list */
 void thread_run_top(void) {
   /* Compare with head since list ordered by greatest priority. */
@@ -439,7 +450,6 @@ void thread_calculate_priority(struct thread *t) {
   t->priority = PRI_MAX - fp_to_int_nearest((DIV_FP_INT(t->recent_cpu,
     4)), FIXED_BASE) - (t->nice * 2);
 }
-
 
 /* Returns the current thread's nice value. */
 int
