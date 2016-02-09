@@ -219,6 +219,7 @@ thread_create (const char *name, int priority,
 
   /* Add to ready queue. */
   thread_unblock (t);
+  /* Run the thread with highest priority */
   thread_run_top();
 
   return tid;
@@ -256,7 +257,7 @@ thread_unblock (struct thread *t)
   ASSERT (is_thread (t));
   old_level = intr_disable ();
   ASSERT (t->status == THREAD_BLOCKED);
-  // Synchronisation safe -> List becomes ordered based on priority
+  /* Synchronisation safe -> List becomes ordered based on priority */
   list_insert_ordered(&ready_list, &t->elem, 
       (list_less_func*) thread_compare, NULL);
   t->status = THREAD_READY;
@@ -348,9 +349,10 @@ thread_yield (void)
   ASSERT (!intr_context ());
 
   old_level = intr_disable ();
-  if (cur != idle_thread)
+  if (cur != idle_thread) {
     list_insert_ordered(&ready_list, &cur->elem, 
         (list_less_func*) thread_compare, NULL);
+  }
   cur->status = THREAD_READY;
   schedule ();
   intr_set_level (old_level);
@@ -393,8 +395,7 @@ thread_get_priority (void)
   return thread_get_priority_of(thread_current());
 }
 
-/* Helper function to thread_get_priority() with the thread whose priority is
-   required as argument */
+/* Returns the priority of the specified thread */
 int thread_get_priority_of(struct thread *t) {
 
   if (list_empty(&t->priorities)) {
@@ -660,13 +661,14 @@ thread_schedule_tail (struct thread *prev)
   if (prev != NULL && prev->status == THREAD_DYING && prev != initial_thread)
     {
       ASSERT (prev != cur);
-      //TODO: need to free the stack of priorities.
+      /* Free the allocated list elements */
       free_priority_list(&prev->priorities);
       free_priority_list(&prev->donations);
       palloc_free_page (prev);
     }
 }
 
+/* Frees the elements in a list of priority_elem */
 void free_priority_list(struct list *l) {
   while (!list_empty(l)) {
     struct list_elem *e = list_pop_front(l);
