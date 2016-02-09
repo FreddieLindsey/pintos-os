@@ -12,6 +12,7 @@
 #include "threads/switch.h"
 #include "threads/synch.h"
 #include "threads/vaddr.h"
+#include "threads/fixed-point.h"
 #ifdef USERPROG
 #include "userprog/process.h"
 #endif
@@ -25,6 +26,11 @@
    ({ __typeof__ (a) _a = (a); \
        __typeof__ (b) _b = (b); \
      _a > _b ? _a : _b; })
+#define LOAD_AVG_RATIO 16111         /* 59/60 * 2^14 */
+#define READY_THREADS_RATIO 273       /* 1/60 * 2^14 */
+
+/* Current load_average */
+static int load_average = 0;
 
 /* List of processes in THREAD_READY state, that is, processes
    that are ready to run but not actually running. */
@@ -46,6 +52,8 @@ static struct lock ready_list_lock;
 /* Lock used by allocate_tid(). */
 static struct lock tid_lock;
 
+
+
 /* Stack frame for kernel_thread(). */
 struct kernel_thread_frame
   {
@@ -60,7 +68,6 @@ static long long kernel_ticks;  /* # of timer ticks in kernel threads. */
 static long long user_ticks;    /* # of timer ticks in user programs. */
 
 /* Scheduling. */
-#define TIME_SLICE 4            /* # of timer ticks to give each thread. */
 static unsigned thread_ticks;   /* # of timer ticks since last yield. */
 
 /* If false (default), use round-robin scheduler.
@@ -379,6 +386,11 @@ thread_foreach (thread_action_func *func, void *aux)
 void
 thread_set_priority (int new_priority)
 {
+
+  if (thread_mlfqs)
+    return;
+
+
   ASSERT (new_priority >= PRI_MIN);
   ASSERT (new_priority <= PRI_MAX);
 
@@ -407,9 +419,18 @@ int thread_get_priority_of(struct thread *t) {
   }
 }
 
+/* Calculates the priority based off of the advanced scheduler */
+void thread_calculate_priority(struct thread *t) {
+  t->priority = PRI_MAX - fp_to_int_nearest((DIV_FP_INT(t->recent_cpu,
+    4)), FIXED_BASE) - (t->nice * 2);
+
+  list_sort(&ready_list, (list_less_func*) thread_compare, NULL);
+}
+
+
 /* Ensure the running thread is the one at the top of the ordered list */
 void thread_run_top(void) {
-  // Compare with head since list ordered by greatest priority.
+  /* Compare with head since list ordered by greatest priority. */
   struct thread *max = list_entry(list_begin(&ready_list), struct thread, elem);
 
   if (thread_get_priority() < thread_get_priority_of(max)) {
@@ -419,33 +440,65 @@ void thread_run_top(void) {
 
 /* Sets the current thread's nice value to NICE. */
 void
-thread_set_nice (int nice UNUSED)
+thread_set_nice (int new_nice)
 {
-  /* Not yet implemented. */
+  ASSERT (new_nice <= 20);
+  ASSERT (new_nice >= -20);
+
+  struct thread *t = thread_current();
+  t->nice = new_nice;
+  thread_calculate_priority(t);
+  thread_run_top();
 }
 
 /* Returns the current thread's nice value. */
 int
 thread_get_nice (void)
 {
-  /* Not yet implemented. */
-  return 0;
+  return thread_current()->nice;
 }
 
 /* Returns 100 times the system load average. */
 int
 thread_get_load_avg (void)
 {
-  /* Not yet implemented. */
-  return 0;
+  return fp_to_int_nearest(load_average * 100, FIXED_BASE);
+}
+
+/* calculates and sets the load_avg */
+void thread_calculate_load_avg() {
+  /* The number of current and ready threads not including idle_thread */
+  int curr_not_idle = thread_current() != idle_thread ? 1 : 0;
+  int ready_threads = list_size(&ready_list) + curr_not_idle;
+
+  int load_avg_portion = MUL_FP_FP(LOAD_AVG_RATIO, load_average, FIXED_BASE);
+  int ready_threads_portion = MUL_FP_INT(READY_THREADS_RATIO, ready_threads);
+  load_average = load_avg_portion + ready_threads_portion;
+
 }
 
 /* Returns 100 times the current thread's recent_cpu value. */
 int
 thread_get_recent_cpu (void)
 {
-  /* Not yet implemented. */
-  return 0;
+  return fp_to_int_nearest(thread_current()->recent_cpu * 100, FIXED_BASE);
+}
+
+/* Calculates the new recent_cpu of thread t */
+void thread_calculate_cpu (struct thread *t) {
+  int double_load = MUL_FP_INT(load_average, 2);
+  int double_load_plus_one = ADD_FP_INT(double_load, 1, FIXED_BASE);
+  int load_div = DIV_FP_FP(double_load, double_load_plus_one, FIXED_BASE);
+  int load_rcpu = MUL_FP_FP(load_div, t->recent_cpu, FIXED_BASE);
+  int new_recent_cpu = ADD_FP_INT(load_rcpu, t->nice, FIXED_BASE);
+  t->recent_cpu = new_recent_cpu;
+}
+
+void increment_r_cpu() {
+  if (thread_current() != idle_thread) {
+    int inc_cpu = ADD_FP_INT(thread_current()->recent_cpu, 1, FIXED_BASE);
+    thread_current()->recent_cpu = inc_cpu;
+  }
 }
 
 /* Idle thread.  Executes when no other thread is ready to run.
@@ -465,7 +518,8 @@ idle (void *idle_started_ UNUSED)
   idle_thread = thread_current ();
   sema_up (idle_started);
   for (;;)
-    {      /* Let someone else run. */
+    {
+      /* Let someone else run. */
       intr_disable ();
       thread_block ();
 
@@ -532,8 +586,22 @@ init_thread (struct thread *t, const char *name, int priority)
   t->status = THREAD_BLOCKED;
   strlcpy (t->name, name, sizeof t->name);
   t->stack = (uint8_t *) t + PGSIZE;
+  if (thread_mlfqs) {
+
+    /* If this is the first thread, initialise to zero
+      otherwise, inherit from parent thread. */
+    if (strcmp(t->name,"main") == 0) {
+      t->nice = 0;
+      t->recent_cpu = 0;
+    } else {
+      t->nice = thread_current()->nice;
+      t->recent_cpu = thread_current()->recent_cpu;
+    }
+    thread_calculate_priority(t);
+  } else {
+    t->priority = priority;
+  }
   t->magic = THREAD_MAGIC;
-  t->priority = priority;
   /* This is the initialisation for the priority stack */
   list_init(&t->priorities);
   /* This is the initialisation for the list of donations given */
@@ -570,7 +638,6 @@ void thread_add_priority(struct thread *t, int priority, struct lock *lock) {
   p->lock = lock;
   p->t = t;
   *d = *p;
-  t->donated = true;
   list_insert_ordered(&t->priorities, &p->elem, 
       (list_less_func*) priority_compare, NULL);
   list_insert_ordered(&thread_current()->donations, &d->elem, 
@@ -587,10 +654,7 @@ void thread_redonate(struct thread *t) {
       struct priority_elem *p = list_entry (e, struct priority_elem, elem);
       thread_donate_priority(p->t, thread_get_priority(), p->lock);
     }
-
-  t->donated = false;
 }
-
 
 /* Allocates a SIZE-byte frame at the top of thread T's stack and
    returns a pointer to the frame's base. */

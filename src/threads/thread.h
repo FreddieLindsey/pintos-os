@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include "synch.h"
 
+
 /* States in a thread's life cycle. */
 enum thread_status
   {
@@ -24,6 +25,8 @@ typedef int tid_t;
 #define PRI_MIN 0                       /* Lowest priority. */
 #define PRI_DEFAULT 31                  /* Default priority. */
 #define PRI_MAX 63                      /* Highest priority. */
+
+#define TIME_SLICE 4
 
 /* A kernel thread or user process.
 
@@ -92,9 +95,8 @@ struct thread
     struct list priorities;             /* Stack of donated priorities */
     struct list donations;              /* Stack of received donations */
     struct list_elem allelem;           /* List element for all threads list */
-    bool donated;                       /* Flag indicating whether donations 
-                                           have been received since thread was
-                                           last running */
+    int nice;
+    int recent_cpu;
 
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
@@ -124,6 +126,7 @@ struct priority_elem {
    If true, use multi-level feedback queue scheduler.
    Controlled by kernel command-line option "-o mlfqs". */
 extern bool thread_mlfqs;
+
 
 void thread_init (void);
 void thread_start (void);
@@ -164,9 +167,12 @@ void thread_donate_priority(struct thread *t, int priority, struct lock *lock);
 void thread_add_priority(struct thread *t, int priority, struct lock *lock);
 void thread_redonate(struct thread *t);
 
+void thread_calculate_priority(struct thread *t);
 int thread_get_nice (void);
 void thread_set_nice (int);
 int thread_get_recent_cpu (void);
+void thread_calculate_cpu (struct thread *t);
+void increment_r_cpu(void) ;
 int thread_get_load_avg (void);
 
 #endif /* threads/thread.h */
