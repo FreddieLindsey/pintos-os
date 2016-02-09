@@ -451,11 +451,6 @@ thread_set_nice (int new_nice)
   thread_run_top();
 }
 
-void thread_calculate_priority(struct thread *t) {
-  t->priority = PRI_MAX - fp_to_int_nearest((DIV_FP_INT(t->recent_cpu,
-    4)), FIXED_BASE) - (t->nice * 2);
-}
-
 /* Returns the current thread's nice value. */
 int
 thread_get_nice (void)
@@ -643,7 +638,6 @@ void thread_add_priority(struct thread *t, int priority, struct lock *lock) {
   p->lock = lock;
   p->t = t;
   *d = *p;
-  t->donated = true;
   list_insert_ordered(&t->priorities, &p->elem, 
       (list_less_func*) priority_compare, NULL);
   list_insert_ordered(&thread_current()->donations, &d->elem, 
@@ -660,8 +654,6 @@ void thread_redonate(struct thread *t) {
       struct priority_elem *p = list_entry (e, struct priority_elem, elem);
       thread_donate_priority(p->t, thread_get_priority(), p->lock);
     }
-
-  t->donated = false;
 }
 
 /* Allocates a SIZE-byte frame at the top of thread T's stack and

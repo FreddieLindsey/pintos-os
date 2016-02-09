@@ -179,27 +179,27 @@ timer_interrupt (struct intr_frame *args UNUSED)
   ticks++;
   thread_tick ();
 
-  /* update load_avg at every multiple of a second
-     it also recalculates recent_cpu using the formula */
-  if(timer_ticks () % TIMER_FREQ == 0) {
-    thread_calculate_load_avg();
+  if (thread_mlfqs) {
+    /* update load_avg at every multiple of a second
+       it also recalculates recent_cpu using the formula */
+    if(timer_ticks () % TIMER_FREQ == 0) {
+      thread_calculate_load_avg();
 
-    enum intr_level old_level = intr_disable();
-    thread_foreach(thread_calculate_cpu, 0);
-    intr_set_level(old_level);
+      enum intr_level old_level = intr_disable();
+      thread_foreach(thread_calculate_cpu, 0);
+      intr_set_level(old_level);
+    }
+
+    if(timer_ticks() % TIME_SLICE == 0) {
+      enum intr_level old_level = intr_disable();
+      thread_foreach(thread_calculate_priority, 0);
+      intr_set_level(old_level);
+    }
+
+    /* at every tick increment recent_cpu of current thread */
+
+    increment_r_cpu();
   }
-
-  if(timer_ticks() % TIME_SLICE == 0) {
-    enum intr_level old_level = intr_disable();
-    thread_foreach(thread_calculate_priority, 0);
-    intr_set_level(old_level);
-  }
-
-  /* at every tick increment recent_cpu of current thread */
-
-  // TODO: SHOULDN'T WE BEING UPDATING THE PRIORITY EVERYTIME THE
-  // RECENT CPU CHANGES TOO, OR JUST EVERY FOUR TICKS?
-  increment_r_cpu();
 
   enum intr_level old_level = intr_disable();
   thread_foreach(notify, 0);
