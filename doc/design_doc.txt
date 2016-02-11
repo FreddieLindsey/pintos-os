@@ -1,0 +1,167 @@
+            +----------------------+
+            |        OS 211        |
+            |  TASK 1: SCHEDULING  |
+            |    DESIGN DOCUMENT   |
+            +----------------------+
+                   
+---- GROUP ----
+
+>> Fill in the names and email addresses of your group members.
+
+Oliver Norton    <otn14@imperial.ac.uk>
+James Lane       <jrl14@imperial.ac.uk>
+Fredrick Lindsey <fl1414@imperial.ac.uk>
+Elias Benussi    <eb1314@imperial.ac.uk>
+
+---- PRELIMINARIES ----
+
+>> If you have any preliminary comments on your submission, or notes for the
+>> markers, please give them here.
+
+>> Please cite any offline or online sources you consulted while
+>> preparing your submission, other than the Pintos documentation, course
+>> text, lecture notes, and course staff.
+
+             PRIORITY SCHEDULING
+             ===================
+
+---- DATA STRUCTURES ----
+
+>> A1: (5 marks) 
+>> Copy here the declaration of each new or changed `struct' or
+>> `struct' member, global or static variable, `typedef', or
+>> enumeration.  Identify the purpose of each in 25 words or less.
+
+>> A2: (10 marks) 
+>> Explain the data structure used to track priority donation.
+>> Give a diagram that illustrates a nested donation in your structure.
+
+We chose a stack ordered according to decreasing priorities. This 
+allowed the thread to result having always the highest priority 
+possible on top of the stack allowing quick retrieval.
+
+---- ALGORITHMS ----
+
+>> A3: (5 marks) 
+>> How do you ensure that the highest priority thread waiting for
+>> a lock, semaphore, or condition variable wakes up first?
+
+Every time a higher priority thread H calls lock_acquire() on a lock 
+held by a given low priority thread L, this means that the call to 
+sema_down() will add H to the sema->waiters list. When finally the 
+lock is released by L a call to sema_up will call thread_unblock() on
+all the threads in sema->waiters which means that they are inserted
+in decreasing order of priority in the ready_list of ready threads. 
+This ensures that when yield is called the thread with the highest
+priority will be given the CPU by the scheduler.
+
+>> A4: (5 marks)
+>> Describe the sequence of events when a call to lock_acquire()
+>> causes a priority donation.  How is nested donation handled?
+
+Assuming the current low priority thread L held the lock A needed by
+the highest priority thread H which is currently running and called
+lock_acquire(). First H checks whether someone else is holding A and 
+once identified the holder it calls thread_donate_priority() to donate
+its priority. It also adds the holder to its list of donations (threads 
+that received priority from it)passes the current lock so that L will have 
+memory in its stack of what lock was the donated priority related to.
+Thread_donate_priority() first checks that the donated priority is higher 
+than L's base priority (otherwise it wouldn't make sense to donate it). 
+It then adds it in order to the priority stack.
+Nested donation is handled by the call to thread_redonate(t) which 
+donates thread t's new priority to all of the threads it has donated to,
+iterating through the donations list.
+
+>> A5: (5 marks)
+>> Describe the sequence of events when lock_release() is called
+>> on a lock that a higher-priority thread is waiting for.
+
+Assuming the current low priority thread L had the highest priority
+thread H donate its priority in order to release the lock A as fast as
+possible and that now L has called lock_release() this is what would
+happen. All priorities in L's priority stack that where donated
+in relation to lock A will be removed and unblock all the threads that
+were blocked and stored in sema->waiters (including H). As they are
+added back to ready_list the list ordering is kept, meaning that H will
+be the first element of the list and the next element to be given the 
+scheduler.
+
+---- SYNCHRONIZATION ----
+
+>> A6: (5 marks)
+>> Describe a potential race in thread_set_priority() and explain
+>> how your implementation avoids it.  Can you use a lock to avoid
+>> this race?
+
+---- RATIONALE ----
+
+>> A7: (5 marks)
+>> Why did you choose this design?  In what ways is it superior to
+>> another design you considered?
+
+One of the choices we had to make regarded thread_donate_priority() that 
+checks the donated priority is higher than the base priority.
+A stricter way would be to check whether there is already a 
+priority related to the lock in question in the stack and update its
+value if the new value is higher.
+Our solution grants faster donation but it's then slower in releasing a
+lock as all priorities related to it have to be removed from the priority
+stack.
+
+              ADVANCED SCHEDULER
+              ==================
+
+---- DATA STRUCTURES ----
+
+>> B1: (5 marks)
+>> Copy here the declaration of each new or changed `struct' or
+>> `struct' member, global or static variable, `typedef', or
+>> enumeration.  Identify the purpose of each in 25 words or less.
+
+---- ALGORITHMS ----
+
+>> B2: (5 marks)
+>> Suppose threads A, B, and C have nice values 0, 1, and 2.  Each
+>> has a recent_cpu value of 0.  Fill in the table below showing the
+>> scheduling decision and the priority and recent_cpu values for each
+>> thread after each given number of timer ticks:
+
+timer  recent_cpu    priority   thread
+ticks   A   B   C   A   B   C   to run
+-----  --  --  --  --  --  --   ------
+ 0
+ 4
+ 8
+12
+16
+20
+24
+28
+32
+36
+
+>> B3: (5 marks) 
+>> Did any ambiguities in the scheduler specification make values
+>> in the table uncertain?  If so, what rule did you use to resolve
+>> them?  Does this match the behaviour of your scheduler?
+
+>> B4: (5 marks)
+>> How is the way you divided the cost of scheduling between code
+>> inside and outside interrupt context likely to affect performance?
+
+---- RATIONALE ----
+
+>> B5: (5 marks)
+>> Briefly critique your design, pointing out advantages and
+>> disadvantages in your design choices.
+
+Representing the list of ready threads we used a single queue ordered by decreasing priority rather than an array of queues for every priority. As a result when changing the priority of a thread the list had to be sorted. This has some cost given that the priority of every thread is recalculated every 4 clock-ticks and the sorting has a worst-case complexity of nlogn. Implementing the other solution would have had the advantage that when recalculating a thread's priority would only require to remove the thread from the old priority queue and insert it into the new priority queue. Given that insertion would consist in a push (constant cost) the worst-case complexity would depend on the removal, which has worst-case complexity n. Although aware of the trade off in performance we chose our implementation because it would make the code much easier to read.
+
+>> B6: (5 marks)
+>> The assignment explains arithmetic for fixed-point mathematics in
+>> detail, but it leaves it open to you to implement it.  Why did you
+>> decide to implement it the way you did?  If you created an
+>> abstraction layer for fixed-point mathematics, that is, an abstract
+>> data type and/or a set of functions or macros to manipulate
+>> fixed-point numbers, why did you do so?  If not, why not?
