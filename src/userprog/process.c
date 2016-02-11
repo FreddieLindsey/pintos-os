@@ -38,6 +38,8 @@ process_execute (const char *file_name)
     return TID_ERROR;
   strlcpy (fn_copy, file_name, PGSIZE);
 
+  // TODO: parse arguments.
+
   /* Create a new thread to execute FILE_NAME. */
   tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
   if (tid == TID_ERROR)
@@ -65,6 +67,8 @@ start_process (void *file_name_)
   palloc_free_page (file_name);
   if (!success)
     thread_exit ();
+
+  // TODO: Set up the stack. Potentially should be done before load().
 
   /* Start the user process by simulating a return from an
      interrupt, implemented by intr_exit (in
