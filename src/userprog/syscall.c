@@ -3,8 +3,12 @@
 #include <syscall-nr.h>
 #include "threads/interrupt.h"
 #include "threads/thread.h"
+#include "devices/shutdown.h"
+#include "filesys/filesys.h"
 
 #define MAX_ARGS 3
+
+static struct lock filesys_lock;
 
 static void syscall_handler (struct intr_frame *);
 void read_args(void* esp, int num, void** args);
@@ -13,6 +17,7 @@ void
 syscall_init (void)
 {
   intr_register_int (0x30, 3, INTR_ON, syscall_handler, "syscall");
+  lock_init(&filesys_lock);
 }
 
 static void
@@ -68,15 +73,14 @@ void read_args(void* esp, int num, void** args) {
     esp++;
     args[i] = esp;
   }
-
 }
 
 void halt (void) {
-
+  shutdown_power_off();
 }
 
 void exit (int status UNUSED) {
-
+  process_exit();
 }
 
 int exec (const char *file UNUSED) {
@@ -87,12 +91,18 @@ int wait (int pid UNUSED) {
   return 0;
 }
 
-bool create (const char *file UNUSED, unsigned initial_size UNUSED) {
-  return false;
+bool create (const char *file, unsigned initial_size) {
+  lock_acquire(&filesys_lock);
+  bool success = filesys_create(file, initial_size);
+  lock_release(&filesys_lock);
+  return success;
 }
 
-bool remove (const char *file UNUSED) {
-  return false;
+bool remove (const char *file) {
+  lock_acquire(&filesys_lock);
+  bool success = filesys_remove(file);
+  lock_release(&filesys_lock);
+  return success
 }
 
 int open (const char *file UNUSED) {
