@@ -105,8 +105,21 @@ bool remove (const char *file) {
   return success
 }
 
-int open (const char *file UNUSED) {
-  return 0;
+int open (const char *file) {
+  lock_acquire(&filesys_lock);
+  struct file *f = filesys_open(file);
+
+  /* If the file could not be opened, return -1 */
+  if (f == NULL) {
+    lock_release(&filesys_lock);
+    return -1;
+  }
+
+  /* Adds file to file descriptor table */
+  int fd = process_generate_fd(f);
+
+  lock_release(&filesys_lock);
+  return fd;
 }
 
 int filesize (int fd UNUSED) {

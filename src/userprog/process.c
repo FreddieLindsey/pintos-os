@@ -201,6 +201,14 @@ process_activate (void)
      interrupts. */
   tss_update ();
 }
+
+/* Adds file to the file descriptor and returns the new file descriptor */
+
+int process_generate_fd(struct file *file) {
+  int fd = 2;
+
+  return fd;
+}
 
 /* We load ELF binaries.  The following definitions are taken
    from the ELF specification, [ELF1], more-or-less verbatim.  */
