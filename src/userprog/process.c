@@ -39,8 +39,17 @@ process_execute (const char *file_name)
   strlcpy (fn_copy, file_name, PGSIZE);
 
   // TODO: parse arguments.
-  /* Create modifiable char array the same as file_name */
-  char fn[] = file_name;
+  /* Create modifiable char array the same as file_name. */
+  int len = 0;
+  do {
+    len++;
+  } while (file_name[len] != '\0');
+  char fn[len];
+  for (int j = 0; j < len; ++j) {
+    fn[j] = file_name[j];
+  }
+  fn[len] = '\0';
+  /* Initialise other arguments required for tokeniser. */
   char *token, *save_ptr;
 
   /* Create a new thread to execute FILE_NAME. */
