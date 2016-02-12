@@ -39,6 +39,9 @@ process_execute (const char *file_name)
   strlcpy (fn_copy, file_name, PGSIZE);
 
   // TODO: parse arguments.
+  /* Create modifiable char array the same as file_name */
+  char fn[] = file_name;
+  char *token, *save_ptr;
 
   /* Create a new thread to execute FILE_NAME. */
   tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
