@@ -39,23 +39,35 @@ process_execute (const char *file_name)
   strlcpy (fn_copy, file_name, PGSIZE);
 
   // TODO: parse arguments.
-  /* Create modifiable char array the same as file_name. */
-  int len = 0;
-  do {
-    len++;
-  } while (file_name[len] != '\0');
-  char fn[len];
-  for (int j = 0; j < len; ++j) {
-    fn[j] = file_name[j];
-  }
-  fn[len] = '\0';
-  /* Initialise other arguments required for tokeniser. */
+
+//  Only needed if fn_copy doesn't work, delete otherwise
+//  /* Create modifiable char array the same as file_name. */
+//  int len = 0;
+//  do {
+//    len++;
+//  } while (file_name[len] != '\0');
+//  char fn[len];
+//  int i;
+//  for (i = 0; i < len; ++i) {
+//    fn[i] = file_name[i];
+//  }
+//  fn[len] = '\0';
+
+  /* Initialise other arguments required and tokenise fn into args. */
   char *token, *save_ptr;
+  char **args; // TODO: put on heap
+  int j = 0;
+  for (token = strtok_r(fn_copy, " ", &save_ptr); token != NULL;
+      token = strtok_r(NULL, " ", &save_ptr)) {
+    args[j] = token;
+    ++j;
+  }
 
   /* Create a new thread to execute FILE_NAME. */
-  tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
+  tid = thread_create (file_name, PRI_DEFAULT, start_process, args);
   if (tid == TID_ERROR)
     palloc_free_page (fn_copy);
+    // TODO: free args here
   return tid;
 }
 
