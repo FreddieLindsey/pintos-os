@@ -55,7 +55,8 @@ process_execute (const char *file_name)
 
   /* Initialise other arguments required and tokenise fn into args. */
   char *token, *save_ptr;
-  char **args; // TODO: put on heap
+  char **args;
+  args = palloc_get_page (0);
   int j = 0;
   for (token = strtok_r(fn_copy, " ", &save_ptr); token != NULL;
       token = strtok_r(NULL, " ", &save_ptr)) {
@@ -67,7 +68,7 @@ process_execute (const char *file_name)
   tid = thread_create (file_name, PRI_DEFAULT, start_process, args);
   if (tid == TID_ERROR)
     palloc_free_page (fn_copy);
-    // TODO: free args here
+    palloc_free_page (args);
   return tid;
 }
 
