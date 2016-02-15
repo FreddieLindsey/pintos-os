@@ -38,24 +38,7 @@ process_execute (const char *file_name)
     return TID_ERROR;
   strlcpy (fn_copy, file_name, PGSIZE);
 
-  // TODO: parse arguments.
-
-//  Only needed if fn_copy doesn't work, delete otherwise
-//  Also, the do-while loop can probably be replaced by taking the return
-//  value from strlcpy as len
-//  /* Create modifiable char array the same as file_name. */
-//  int len = 0;
-//  do {
-//    len++;
-//  } while (file_name[len] != '\0');
-//  char fn[len];
-//  int i;
-//  for (i = 0; i < len; ++i) {
-//    fn[i] = file_name[i];
-//  }
-//  fn[len] = '\0';
-
-  /* Initialise other arguments required and tokenise fn into args. */
+  /* Initialise other arguments required and tokenise fn_copy into args. */
   char *token, *save_ptr;
   char **args;
   args = palloc_get_page (0);
@@ -96,8 +79,6 @@ start_process (void *file_name_)
   palloc_free_page (file_name);
   if (!success)
     thread_exit ();
-
-  // TODO: Set up the stack
 
   /* Determine argc. */
   int argc = 0;
