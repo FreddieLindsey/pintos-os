@@ -127,11 +127,32 @@ start_process (void *file_name_)
     if_.esp -= esp_align;
   }
   /* Push null pointer sentinel onto stack as the end of argv. */
-  asm volatile ("mov $0, %%eax; push %%eax;"  // Push 0 (NULL) onto stack.
-               :::"%%eax");                   // Clobbers eax.
-  // Push pointers to arguments
-  // Push argument length
-  // Push return address
+  asm volatile ("mov $0, %%eax; push %%eax;"    // Push 0 (NULL) onto stack.
+               :::"%%eax");                     // Clobbers eax.
+  /* Push the stack pointers comprising argv. */
+  i = argc - 1;
+  for (int i; i >= 0; --i) {
+    asm volatile ("mov %0, %%eax; push %%eax;"  // Push onto stack.
+                 :                              // No outputs.
+                 :"r" (argv[i])                 // Using argv pointer.
+                 :"%%eax"                       // Clobbers eax.
+                 );
+  }
+  /* Push argv. */
+  asm volatile ("mov %0, %%eax; push %%eax;"    // Push onto stack.
+               :                                // No outputs.
+               :"r" (if_.esp)                   // Using current esp.
+               :"%%eax"                         // Clobbers eax.
+               );
+  /* Push argc. */
+  asm volatile ("mov %0, %%eax; push %%eax;"    // Push onto stack.
+               :                                // No outputs.
+               :"r" (argc)                      // Using current esp.
+               :"%%eax"                         // Clobbers eax.
+               );
+  /* Push return address (NULL). */
+  asm volatile ("mov $0, %%eax; push %%eax;"    // Push 0 (NULL) onto stack.
+               :::"%%eax");                     // Clobbers eax.
 
   /* Start the user process by simulating a return from an
      interrupt, implemented by intr_exit (in
