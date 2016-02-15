@@ -20,7 +20,7 @@
 #include "threads/vaddr.h"
 
 static thread_func start_process NO_RETURN;
-static struct list fd_list;
+struct list fd_list;
 static bool load (const char *cmdline, void (**eip) (void), void **esp);
 
 
@@ -235,6 +235,34 @@ int process_generate_fd(struct file *file) {
   list_insert(list_next(e), &f->elem);
 
   return fd;
+}
+
+struct file* process_get_file(int fd) {
+  struct list_elem *e;
+  for (e = list_begin(&fd_list); e = list_end(&fd_list); e = list_next(e)) {
+    struct fd_elem* f = list_entry(e, struct fd_elem, elem);
+
+    /* Found a gap in the list so break out of for loop */
+    if (f->fd == fd) {
+      return f->file;
+    }
+  }
+
+  return NULL;
+}
+
+void process_remove_fd(int fd) {
+  struct list_elem *e;
+  for (e = list_begin(&fd_list); e = list_end(&fd_list); e = list_next(e)) {
+    struct fd_elem* f = list_entry(e, struct fd_elem, elem);
+
+    /* Found a gap in the list so break out of for loop */
+    if (f->fd == fd) {
+      list_remove(e);
+      struct fd_elem* f = list_entry(e, struct fd_elem, elem);
+      free(f);
+    }
+  }
 }
 
 /* We load ELF binaries.  The following definitions are taken

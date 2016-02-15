@@ -6,6 +6,7 @@
 #include "threads/thread.h"
 #include "devices/shutdown.h"
 #include "filesys/filesys.h"
+#include "filesys/file.h"
 
 #define MAX_ARGS 3
 
@@ -24,7 +25,6 @@ syscall_init (void)
 static void
 syscall_handler (struct intr_frame *f)
 {
-
   /* Read the number of the system call */
   int syscall_num = *(int*)(f->esp);
 
@@ -60,7 +60,7 @@ syscall_handler (struct intr_frame *f)
     case SYS_TELL: read_args(f->esp, 1, args);
                    f->eax = tell(*(int*)args[0]); break;
     case SYS_CLOSE: read_args(f->esp, 1, args);
-                    close (*(int*)args[0]); break;
+                     (*(int*)args[0]); break;
   }
 
   printf ("system call!\n");
@@ -123,26 +123,33 @@ int open (const char *file) {
   return fd;
 }
 
-int filesize (int fd UNUSED) {
-  return 0;
+int filesize (int fd) {
+  return file_length(process_get_file(fd));
 }
 
-int read (int fd UNUSED, void *buffer UNUSED, unsigned length UNUSED) {
-  return 0;
+int read (int fd, void *buffer, unsigned length) {
+  struct file *file = process_get_file(fd);
+  return file_read(file, buffer, length);
 }
 
-int write (int fd UNUSED, const void *buffer UNUSED, unsigned length UNUSED) {
-  return 0;
+int write (int fd, const void *buffer, unsigned length) {
+  struct file *file = process_get_file(fd);
+  return file_write(file, buffer, length);
 }
+#include "filesys/file.h"
 
-void seek (int fd UNUSED, unsigned position UNUSED) {
-
+void seek (int fd, unsigned position) {
+  struct file *file = process_get_file(fd);
+  file_seek(file, position);
 }
 
 unsigned tell (int fd UNUSED) {
-  return 0;
+  struct file *file = process_get_file(fd);
+  return file_tell(file);
 }
 
-void close (int fd UNUSED) {
-
+void close (int fd) {
+  struct file *file = process_get_file(fd);
+  file_close(file);
+  process_remove_fd(fd);
 }
