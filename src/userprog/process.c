@@ -99,12 +99,35 @@ start_process (void *file_name_)
 
   // TODO: Set up the stack
 
-  // Push arguments onto stack, decrement &if_.esp
+  /* Determine argc. */
+  int argc = 0;
+  while (file_name[argc] != NULL) {
+    ++argc;
+  }
+
+  /* Set up temporary array to track pointers to args on stack. */
+  uint8_t argv[argc];
+
+  /* Push arguments onto stack, right to left. */
+  int i = argc - 1;
+  for (int i; i >= 0; --i) {
+    /* Use x86 PUSH instruction to push each program argument onto the
+    stack. This also decrements the stack pointer. */
+    asm volatile ("mov %0, %%eax; push %%eax;"  // Push onto stack.
+                 :                              // No outputs.
+                 :"r" (file_name[i])            // Using arg string.
+                 :"%%eax"                       // Clobbers eax.
+                 );
+    /* Save the current stack pointer to use in argv. */
+    argv[i] = &if_.esp;
+  }
   // Make sure esp is word aligned
   // Push null
   // Push pointers to arguments
   // Push argument length
   // Push return address
+
+  /* Uses the x86 PUSH instruction to push the argument onto the stack. */
 
   /* Start the user process by simulating a return from an
      interrupt, implemented by intr_exit (in
