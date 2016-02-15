@@ -84,8 +84,8 @@ void exit (int status UNUSED) {
   process_exit();
 }
 
-int exec (const char *file UNUSED) {
-  return 0;
+int exec (const char *file) {
+  return process_execute(file);
 }
 
 int wait (int pid UNUSED) {
@@ -136,7 +136,6 @@ int write (int fd, const void *buffer, unsigned length) {
   struct file *file = process_get_file(fd);
   return file_write(file, buffer, length);
 }
-#include "filesys/file.h"
 
 void seek (int fd, unsigned position) {
   struct file *file = process_get_file(fd);
@@ -151,5 +150,5 @@ unsigned tell (int fd UNUSED) {
 void close (int fd) {
   struct file *file = process_get_file(fd);
   file_close(file);
-  process_remove_fd(fd);
+  process_remove_fds(file);
 }

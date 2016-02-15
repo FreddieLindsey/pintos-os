@@ -220,7 +220,7 @@ int process_generate_fd(struct file *file) {
   int fd = 2;
   struct list_elem *e;
 
-  for (e = list_begin(&fd_list); e = list_end(&fd_list); e = list_next(e)) {
+  for (e = list_begin(&fd_list); e != list_end(&fd_list); e = list_next(e)) {
     struct fd_elem* f = list_entry(e, struct fd_elem, elem);
 
     /* Found a gap in the list so break out of for loop */
@@ -239,7 +239,7 @@ int process_generate_fd(struct file *file) {
 
 struct file* process_get_file(int fd) {
   struct list_elem *e;
-  for (e = list_begin(&fd_list); e = list_end(&fd_list); e = list_next(e)) {
+  for (e = list_begin(&fd_list); e != list_end(&fd_list); e = list_next(e)) {
     struct fd_elem* f = list_entry(e, struct fd_elem, elem);
 
     /* Found a gap in the list so break out of for loop */
@@ -251,16 +251,16 @@ struct file* process_get_file(int fd) {
   return NULL;
 }
 
-void process_remove_fd(int fd) {
+void process_remove_fds(struct file *file) {
   struct list_elem *e;
-  for (e = list_begin(&fd_list); e = list_end(&fd_list); e = list_next(e)) {
+  for (e = list_begin(&fd_list); e != list_end(&fd_list); e = list_next(e)) {
     struct fd_elem* f = list_entry(e, struct fd_elem, elem);
 
-    /* Found a gap in the list so break out of for loop */
-    if (f->fd == fd) {
+    /* Found the file in the table so remove the fd_elem */
+    if (f->file == file) {
       list_remove(e);
-      struct fd_elem* f = list_entry(e, struct fd_elem, elem);
-      free(f);
+      struct fd_elem* fd_elem = list_entry(e, struct fd_elem, elem);
+      free(fd_elem);
     }
   }
 }
