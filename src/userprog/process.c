@@ -119,15 +119,19 @@ start_process (void *file_name_)
                  :"%%eax"                       // Clobbers eax.
                  );
     /* Save the current stack pointer to use in argv. */
-    argv[i] = &if_.esp;
+    argv[i] = if_.esp;
   }
-  // Make sure esp is word aligned
-  // Push null
+  /* Ensure esp is word aligned (a multiple of 4). */
+  uint8_t esp_align = if_.esp % 4;
+  if (esp_align != 0) {
+    if_.esp -= esp_align;
+  }
+  /* Push null pointer sentinel onto stack as the end of argv. */
+  asm volatile ("mov $0, %%eax; push %%eax;"  // Push 0 (NULL) onto stack.
+               :::"%%eax");                   // Clobbers eax.
   // Push pointers to arguments
   // Push argument length
   // Push return address
-
-  /* Uses the x86 PUSH instruction to push the argument onto the stack. */
 
   /* Start the user process by simulating a return from an
      interrupt, implemented by intr_exit (in
