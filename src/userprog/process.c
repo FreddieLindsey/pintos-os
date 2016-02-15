@@ -41,6 +41,8 @@ process_execute (const char *file_name)
   // TODO: parse arguments.
 
 //  Only needed if fn_copy doesn't work, delete otherwise
+//  Also, the do-while loop can probably be replaced by taking the return
+//  value from strlcpy as len
 //  /* Create modifiable char array the same as file_name. */
 //  int len = 0;
 //  do {
@@ -63,6 +65,7 @@ process_execute (const char *file_name)
     args[j] = token;
     ++j;
   }
+  args[j] = NULL;
 
   /* Create a new thread to execute FILE_NAME. */
   tid = thread_create (file_name, PRI_DEFAULT, start_process, args);
@@ -78,7 +81,7 @@ process_execute (const char *file_name)
 static void
 start_process (void *file_name_)
 {
-  char *file_name = file_name_;
+  char **file_name = file_name_;
   struct intr_frame if_;
   bool success;
 
@@ -94,7 +97,14 @@ start_process (void *file_name_)
   if (!success)
     thread_exit ();
 
-  // TODO: Set up the stack. Potentially should be done before load().
+  // TODO: Set up the stack
+
+  // Push arguments onto stack, decrement &if_.esp
+  // Make sure esp is word aligned
+  // Push null
+  // Push pointers to arguments
+  // Push argument length
+  // Push return address
 
   /* Start the user process by simulating a return from an
      interrupt, implemented by intr_exit (in
@@ -105,6 +115,8 @@ start_process (void *file_name_)
   asm volatile ("movl %0, %%esp; jmp intr_exit" : : "g" (&if_) : "memory");
   NOT_REACHED ();
 }
+
+// TODO: Assembly push helper function
 
 /* Waits for thread TID to die and returns its exit status.  If
    it was terminated by the kernel (i.e. killed due to an
