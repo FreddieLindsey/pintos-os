@@ -37,7 +37,6 @@ build:
 
 deploy:
   steps:
-
     - script:
     name: Testing src/devices
     code: |
@@ -46,8 +45,6 @@ deploy:
     name: Testing src/threads
     code: |
       make -C src/threads check
-
-
     - add-to-known_hosts:
         hostname: gitlab.doc.ic.ac.uk
     - mktemp:
