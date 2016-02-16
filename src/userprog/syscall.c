@@ -27,11 +27,12 @@ syscall_handler (struct intr_frame *f)
   /* Read the number of the system call */
   int syscall_num = *(int*)(f->esp);
 
-  /* Read the arguments of the system call */
 
   /* array which holds the arguments of the system call */
   /* also passes to the appropriate function */
   void* args[MAX_ARGS];
+
+  /* Read the arguments of the system call and call the appropriate one */
   switch (syscall_num) {
     case SYS_HALT: halt(); break;
     case SYS_EXIT: read_args(f->esp, 1, args);
@@ -69,9 +70,10 @@ syscall_handler (struct intr_frame *f)
 /* Reads num arguments from esp and stores them in args */
 void read_args(void* esp, int num, void** args) {
   int i = 0;
+  void* p = esp;
   for (; i < num; i++) {
-    esp++;
-    args[i] = esp;
+    p++;
+    args[i] = p;
   }
 }
 
