@@ -265,7 +265,7 @@ thread_unblock (struct thread *t)
   old_level = intr_disable ();
   ASSERT (t->status == THREAD_BLOCKED);
   /* Synchronisation safe -> List becomes ordered based on priority */
-  list_insert_ordered(&ready_list, &t->elem, 
+  list_insert_ordered(&ready_list, &t->elem,
       (list_less_func*) thread_compare, NULL);
   t->status = THREAD_READY;
   intr_set_level (old_level);
@@ -357,7 +357,7 @@ thread_yield (void)
 
   old_level = intr_disable ();
   if (cur != idle_thread) {
-    list_insert_ordered(&ready_list, &cur->elem, 
+    list_insert_ordered(&ready_list, &cur->elem,
         (list_less_func*) thread_compare, NULL);
   }
   cur->status = THREAD_READY;
@@ -414,7 +414,7 @@ int thread_get_priority_of(struct thread *t) {
     return t->priority;
   } else {
     struct list_elem *front = list_front(&t->priorities);
-    return max(t->priority, 
+    return max(t->priority,
         list_entry(front, struct priority_elem, elem)->priority);
   }
 }
@@ -638,9 +638,9 @@ void thread_add_priority(struct thread *t, int priority, struct lock *lock) {
   p->lock = lock;
   p->t = t;
   *d = *p;
-  list_insert_ordered(&t->priorities, &p->elem, 
+  list_insert_ordered(&t->priorities, &p->elem,
       (list_less_func*) priority_compare, NULL);
-  list_insert_ordered(&thread_current()->donations, &d->elem, 
+  list_insert_ordered(&thread_current()->donations, &d->elem,
       (list_less_func*) priority_compare, NULL);
 
 }
