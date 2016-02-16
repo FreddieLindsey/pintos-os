@@ -35,6 +35,21 @@ build:
       url: $SLACK_URL
       username: wercker
 
+dev:
+  steps:
+    - script: Make tools available
+      code: |
+        export PATH="$(pwd)/src/utils:$PATH"
+        echo -e "PATH:\t$PATH"
+    - script:
+      name: Testing src/devices
+      code: |
+        make -C src/devices check
+    - script:
+      name: Testing src/threads
+      code: |
+        make -C src/threads check
+
 deploy:
   steps:
 
