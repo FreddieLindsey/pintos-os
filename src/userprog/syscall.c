@@ -80,7 +80,8 @@ void halt (void) {
   shutdown_power_off();
 }
 
-void exit (int status UNUSED) {
+void exit (int status) {
+  thread_current()->exit_status = status;
   process_exit();
 }
 
@@ -88,8 +89,8 @@ int exec (const char *file) {
   return process_execute(file);
 }
 
-int wait (int pid UNUSED) {
-  return 0;
+int wait (int pid) {
+  return process_wait(pid);
 }
 
 bool create (const char *file, unsigned initial_size) {
