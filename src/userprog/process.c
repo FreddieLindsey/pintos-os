@@ -122,9 +122,10 @@ start_process (void *file_name_)
   }
 
   /* Decrement the stack pointer by the size of a pointer. */
+  void *esp_save = if_.esp;
   if_.esp -= sizeof(argv[0]);
   /* Push pointer to the base of argv on the stack. */
-  memcpy(if_.esp, &if_.esp - sizeof(argv[0]), sizeof(argv[0]));
+  memcpy(if_.esp, &esp_save, sizeof(argv[0]));
 
   /* Decrement the stack pointer by the size of an int. */
   if_.esp -= sizeof(argc);
