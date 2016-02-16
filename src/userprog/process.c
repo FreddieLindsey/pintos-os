@@ -92,65 +92,50 @@ start_process (void *file_name_)
   /* Push arguments onto stack, right to left. */
   int i; 
   for (i = argc - 1; i >= 0; --i) {
-    /* Use x86 PUSH instruction to push each program argument onto the
-    stack. This also decrements the stack pointer. */
-    // TODO: Make sure if_.esp is not being decremented by x86 PUSH as well,
-    // in which case remove ALL explicit decrements.
     // TODO: Make sure what's being pushed here is the exact char[] for
     // each arg, and the stack pointer is being decremented by the right
     // amount, i.e. not the size of a pointer.
-    asm volatile ("push %0;"          // Push onto stack.
-                 :                    // No outputs.
-                 :"r" (file_name[i])  // Using arg string.
-                 );
     /* Decrement the stack pointer by the size of the char[] pushed. */
     if_.esp -= sizeof(file_name[i]);
+    /* Copy each arg string onto the stack. */
+    memcpy(if_.esp, file_name[i], sizeof(file_name[i]));
     /* Save the current stack pointer to use in argv. */
     argv[i] = if_.esp;
   }
 
   /* Ensure esp is word aligned (a multiple of 4). */
-  // TODO: Make sure this actually happends to the real stack pointer.
   uint32_t esp_align = (uint32_t) if_.esp % 4;
   if (esp_align != 0) {
     if_.esp -= esp_align;
   }
 
-  /* Push null pointer sentinel onto stack as the end of argv. */
-  asm volatile ("push $0;" : :);      // Push 0 (NULL) onto stack.
   /* Decrement the stack pointer by the size of a pointer. */
   if_.esp -= sizeof(argv[0]);
+  /* Push null pointer sentinel onto stack as the end of argv. */
+  const void *np = NULL;
+  memcpy(if_.esp, np, sizeof(np));
 
-  /* Push the stack pointers comprising argv. */
   for (i = argc - 1; i >= 0; --i) {
-    asm volatile ("push %0;"          // Push onto stack.
-                 :                    // No outputs.
-                 :"r" (argv[i])       // Using argv pointer.
-                 );
     /* Decrement the stack pointer by the size of a pointer. */
     if_.esp -= sizeof(argv[i]);
+    /* Push the stack pointers comprising argv. */
+    memcpy(if_.esp, argv[i], sizeof(argv[i]));
   }
 
-  /* Push pointer to the base of argv on the stack. */
-  asm volatile ("push %0;"            // Push onto stack.
-               :                      // No outputs.
-               :"r" (if_.esp)         // Using current esp.
-               );
   /* Decrement the stack pointer by the size of a pointer. */
   if_.esp -= sizeof(argv[0]);
+  /* Push pointer to the base of argv on the stack. */
+  memcpy(if_.esp, &if_.esp - sizeof(argv[0]), sizeof(argv[0]));
 
-  /* Push argc. */
-  asm volatile ("push %0;"            // Push onto stack.
-               :                      // No outputs.
-               :"r" (argc)            // Using current esp.
-               );
   /* Decrement the stack pointer by the size of an int. */
   if_.esp -= sizeof(argc);
+  /* Push argc. */
+  memcpy(if_.esp, argc, sizeof(argc));
 
-  /* Push return address (NULL). */
-  asm volatile ("push $0;" : :);      // Push 0 (NULL) onto stack.
   /* Decrement the stack pointer by the size of a pointer. */
   if_.esp -= sizeof(argv[0]);
+  /* Push return address (NULL). */
+  memcpy(if_.esp, 0, sizeof(int));
 
   /* Start the user process by simulating a return from an
      interrupt, implemented by intr_exit (in
