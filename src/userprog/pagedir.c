@@ -133,6 +133,8 @@ pagedir_get_page (uint32_t *pd, const void *uaddr)
     return NULL;
   }
 
+  // TODO: does uaddr need deferencing before terminating the process?
+
   pte = lookup_page (pd, uaddr, false);
   if (pte != NULL && (*pte & PTE_P) != 0)
     // Case 3: address is mapped, and corresponds to a physical address
