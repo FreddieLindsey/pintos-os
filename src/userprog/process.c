@@ -94,45 +94,41 @@ start_process (void *file_name_)
   for (i = argc - 1; i >= 0; --i) {
     /* Use x86 PUSH instruction to push each program argument onto the
     stack. This also decrements the stack pointer. */
-    asm volatile ("mov %0, %%eax; push %%eax;"  // Push onto stack.
-                 :                              // No outputs.
-                 :"r" (file_name[i])            // Using arg string.
-                 :"%%eax"                       // Clobbers eax.
+    asm volatile ("push %0;"          // Push onto stack.
+                 :                    // No outputs.
+                 :"r" (file_name[i])  // Using arg string.
                  );
     /* Save the current stack pointer to use in argv. */
     argv[i] = if_.esp;
   }
+
   /* Ensure esp is word aligned (a multiple of 4). */
   uint32_t esp_align = (uint32_t) if_.esp % 4;
   if (esp_align != 0) {
     if_.esp -= esp_align;
   }
+
   /* Push null pointer sentinel onto stack as the end of argv. */
-  asm volatile ("mov $0, %%eax; push %%eax;"    // Push 0 (NULL) onto stack.
-               :::"%%eax");                     // Clobbers eax.
+  asm volatile ("push $0;" : :);      // Push 0 (NULL) onto stack.
   /* Push the stack pointers comprising argv. */
   for (i = argc - 1; i >= 0; --i) {
-    asm volatile ("mov %0, %%eax; push %%eax;"  // Push onto stack.
-                 :                              // No outputs.
-                 :"r" (argv[i])                 // Using argv pointer.
-                 :"%%eax"                       // Clobbers eax.
+    asm volatile ("push %0;"          // Push onto stack.
+                 :                    // No outputs.
+                 :"r" (argv[i])       // Using argv pointer.
                  );
   }
   /* Push argv. */
-  asm volatile ("mov %0, %%eax; push %%eax;"    // Push onto stack.
-               :                                // No outputs.
-               :"r" (if_.esp)                   // Using current esp.
-               :"%%eax"                         // Clobbers eax.
+  asm volatile ("push %0;"            // Push onto stack.
+               :                      // No outputs.
+               :"r" (if_.esp)         // Using current esp.
                );
   /* Push argc. */
-  asm volatile ("mov %0, %%eax; push %%eax;"    // Push onto stack.
-               :                                // No outputs.
-               :"r" (argc)                      // Using current esp.
-               :"%%eax"                         // Clobbers eax.
+  asm volatile ("push %0;"            // Push onto stack.
+               :                      // No outputs.
+               :"r" (argc)            // Using current esp.
                );
   /* Push return address (NULL). */
-  asm volatile ("mov $0, %%eax; push %%eax;"    // Push 0 (NULL) onto stack.
-               :::"%%eax");                     // Clobbers eax.
+  asm volatile ("push $0;" : :);      // Push 0 (NULL) onto stack.
 
   /* Start the user process by simulating a return from an
      interrupt, implemented by intr_exit (in
