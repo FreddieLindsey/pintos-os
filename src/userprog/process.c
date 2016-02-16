@@ -73,7 +73,7 @@ start_process (void *file_name_)
   if_.gs = if_.fs = if_.es = if_.ds = if_.ss = SEL_UDSEG;
   if_.cs = SEL_UCSEG;
   if_.eflags = FLAG_IF | FLAG_MBS;
-  success = load (file_name, &if_.eip, &if_.esp);
+  success = load (file_name[0], &if_.eip, &if_.esp);
 
   /* If load failed, quit. */
   palloc_free_page (file_name);
@@ -87,11 +87,11 @@ start_process (void *file_name_)
   }
 
   /* Set up temporary array to track pointers to args on stack. */
-  uint8_t argv[argc];
+  void *argv[argc];
 
   /* Push arguments onto stack, right to left. */
-  int i = argc - 1;
-  for (int i; i >= 0; --i) {
+  int i; 
+  for (i = argc - 1; i >= 0; --i) {
     /* Use x86 PUSH instruction to push each program argument onto the
     stack. This also decrements the stack pointer. */
     asm volatile ("mov %0, %%eax; push %%eax;"  // Push onto stack.
@@ -103,7 +103,7 @@ start_process (void *file_name_)
     argv[i] = if_.esp;
   }
   /* Ensure esp is word aligned (a multiple of 4). */
-  uint8_t esp_align = if_.esp % 4;
+  uint32_t esp_align = (uint32_t) if_.esp % 4;
   if (esp_align != 0) {
     if_.esp -= esp_align;
   }
@@ -111,8 +111,7 @@ start_process (void *file_name_)
   asm volatile ("mov $0, %%eax; push %%eax;"    // Push 0 (NULL) onto stack.
                :::"%%eax");                     // Clobbers eax.
   /* Push the stack pointers comprising argv. */
-  i = argc - 1;
-  for (int i; i >= 0; --i) {
+  for (i = argc - 1; i >= 0; --i) {
     asm volatile ("mov %0, %%eax; push %%eax;"  // Push onto stack.
                  :                              // No outputs.
                  :"r" (argv[i])                 // Using argv pointer.
@@ -144,8 +143,6 @@ start_process (void *file_name_)
   asm volatile ("movl %0, %%esp; jmp intr_exit" : : "g" (&if_) : "memory");
   NOT_REACHED ();
 }
-
-// TODO: Assembly push helper function
 
 /* Waits for thread TID to die and returns its exit status.  If
    it was terminated by the kernel (i.e. killed due to an
@@ -509,7 +506,7 @@ setup_stack (void **esp)
     {
       success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true);
       if (success)
-        *esp = PHYS_BASE - 12;
+        *esp = PHYS_BASE;
       else
         palloc_free_page (kpage);
     }
