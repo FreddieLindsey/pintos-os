@@ -23,7 +23,6 @@ static thread_func start_process NO_RETURN;
 struct list fd_list;
 static bool load (const char *cmdline, void (**eip) (void), void **esp);
 
-
 struct fd_elem {
   int fd;
   struct file *file;

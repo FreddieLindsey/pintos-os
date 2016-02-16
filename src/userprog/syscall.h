@@ -2,6 +2,7 @@
 #define USERPROG_SYSCALL_H
 
 #include <stdbool.h>
+#include "userprog/process.h"
 
 
 void syscall_init (void);
@@ -11,8 +12,8 @@ void syscall_init (void);
 /* Tasks 2 and later system calls. */
 void halt (void);
 void exit (int status);
-int exec (const char *file);
-int wait (int);
+pid_t exec (const char *file);
+int wait (pid_t);
 bool create (const char *file, unsigned initial_size);
 bool remove (const char *file);
 int open (const char *file);

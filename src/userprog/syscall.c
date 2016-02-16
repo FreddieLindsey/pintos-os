@@ -1,5 +1,4 @@
 #include "userprog/syscall.h"
-#include "userprog/process.h"
 #include <stdio.h>
 #include <syscall-nr.h>
 #include "threads/interrupt.h"
@@ -85,11 +84,12 @@ void exit (int status) {
   process_exit();
 }
 
-int exec (const char *file) {
+pid_t exec (const char *file) {
   return process_execute(file);
 }
 
-int wait (int pid) {
+int wait (pid_t pid) {
+  // TODO: Convert pid to corresponding tid
   return process_wait(pid);
 }
 
