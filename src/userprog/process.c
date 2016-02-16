@@ -92,9 +92,9 @@ start_process (void *file_name_)
   /* Push arguments onto stack, right to left. */
   int i; 
   for (i = argc - 1; i >= 0; --i) {
-    // TODO: Make sure what's being pushed here is the exact char[] for
+    // TODO: Make sure what's being pushed here is the actual char[] for
     // each arg, and the stack pointer is being decremented by the right
-    // amount, i.e. not the size of a pointer.
+    // amount, i.e. the size of x chars not the size of a pointer.
     /* Decrement the stack pointer by the size of the char[] pushed. */
     if_.esp -= sizeof(file_name[i]);
     /* Copy each arg string onto the stack. */
@@ -112,8 +112,7 @@ start_process (void *file_name_)
   /* Decrement the stack pointer by the size of a pointer. */
   if_.esp -= sizeof(argv[0]);
   /* Push null pointer sentinel onto stack as the end of argv. */
-  const void *np = NULL;
-  memcpy(if_.esp, np, sizeof(np));
+  memcpy(if_.esp, 0, sizeof(argv[0]));
 
   for (i = argc - 1; i >= 0; --i) {
     /* Decrement the stack pointer by the size of a pointer. */
@@ -130,7 +129,7 @@ start_process (void *file_name_)
   /* Decrement the stack pointer by the size of an int. */
   if_.esp -= sizeof(argc);
   /* Push argc. */
-  memcpy(if_.esp, argc, sizeof(argc));
+  memcpy(if_.esp, &argc, sizeof(argc));
 
   /* Decrement the stack pointer by the size of a pointer. */
   if_.esp -= sizeof(argv[0]);
