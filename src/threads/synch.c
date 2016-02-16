@@ -70,7 +70,7 @@ sema_down (struct semaphore *sema)
   while (sema->value == 0)
     {
       /* Order waiting threads by priority */
-      list_insert_ordered(&sema->waiters, &thread_current ()->elem, 
+      list_insert_ordered(&sema->waiters, &thread_current ()->elem,
           (list_less_func*)thread_compare, NULL);
       thread_block ();
     }
@@ -122,7 +122,7 @@ sema_up (struct semaphore *sema)
                                 struct thread, elem));
   sema->value++;
   intr_set_level (old_level);
-  /* Run the thread with the highest priority if not currently in an 
+  /* Run the thread with the highest priority if not currently in an
    interrupt handler */
   if (!intr_context()) {
     thread_run_top();
@@ -205,7 +205,7 @@ lock_acquire (struct lock *lock)
   ASSERT (!intr_context ());
   ASSERT (!lock_held_by_current_thread (lock));
 
-  /* If lock is held by another thread (with lower priority), donate 
+  /* If lock is held by another thread (with lower priority), donate
      priority to that thread then block */
   if (lock->holder != NULL) {
     thread_donate_priority(lock->holder, thread_get_priority(), lock);
@@ -392,7 +392,7 @@ bool sema_compare (const struct list_elem *a,
   if (list_empty(la)) {
     return false;
   }
-  
+
   // a > NULL
   if (list_empty(lb)) {
     return true;
@@ -403,4 +403,3 @@ bool sema_compare (const struct list_elem *a,
 
   return thread_get_priority_of(ta) > thread_get_priority_of(tb);
 }
-
