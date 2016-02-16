@@ -128,19 +128,17 @@ pagedir_get_page (uint32_t *pd, const void *uaddr)
   uint32_t *pte;
 
   if(!is_user_vaddr (uaddr) || uaddr == NULL) {
-    // Case 1 & 2: the pointer is null or not a user virtual address
+    /* Case 1 & 2: the pointer is null or not a user virtual address */
     thread_exit();
     return NULL;
   }
 
-  // TODO: does uaddr need deferencing before terminating the process?
-
   pte = lookup_page (pd, uaddr, false);
   if (pte != NULL && (*pte & PTE_P) != 0)
-    // Case 3: address is mapped, and corresponds to a physical address
+    /* Case 3: address is mapped, and corresponds to a physical address */
     return pte_get_page (*pte) + pg_ofs (uaddr);
   else {
-    // Case 4: address is unmapped
+    /* Case 4: address is unmapped */
     thread_exit();
     return NULL;
   }
