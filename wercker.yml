@@ -17,9 +17,9 @@ build:
       code: |
         make -C src/devices
     - script:
-      name: Testing src/devices
+      name: Compiling src/threads
       code: |
-        make -C src/devices check
+        make -C src/threads
     - script:
       name: Testing src/threads/fixed-point
       code: |
@@ -37,6 +37,16 @@ build:
 
 deploy:
   steps:
+
+    - script:
+      name: Testing src/devices
+      code: |
+        make -C src/devices check
+    - script:
+      name: Testing src/threads
+      code: |
+        make -C src/threads check
+
     - add-to-known_hosts:
         hostname: gitlab.doc.ic.ac.uk
     - mktemp:
