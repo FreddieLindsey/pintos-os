@@ -38,10 +38,24 @@ process_execute (const char *file_name)
     return TID_ERROR;
   strlcpy (fn_copy, file_name, PGSIZE);
 
+  /* Initialise other arguments required and tokenise fn_copy into args. */
+  char *token, *save_ptr;
+  char **args;
+  args = palloc_get_page (0);
+  int j = 0;
+  for (token = strtok_r(fn_copy, " ", &save_ptr); token != NULL;
+      token = strtok_r(NULL, " ", &save_ptr)) {
+    args[j] = token;
+    ++j;
+  }
+  args[j] = NULL;
+
   /* Create a new thread to execute FILE_NAME. */
-  tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
+  tid = thread_create (file_name, PRI_DEFAULT, start_process, args[0]);
   if (tid == TID_ERROR)
     palloc_free_page (fn_copy);
+    palloc_free_page (args);
+    // TODO: Potentially need to free args elsewhere also
   return tid;
 }
 
@@ -50,7 +64,7 @@ process_execute (const char *file_name)
 static void
 start_process (void *file_name_)
 {
-  char *file_name = file_name_;
+  char **file_name = file_name_;
   struct intr_frame if_;
   bool success;
 
@@ -59,12 +73,67 @@ start_process (void *file_name_)
   if_.gs = if_.fs = if_.es = if_.ds = if_.ss = SEL_UDSEG;
   if_.cs = SEL_UCSEG;
   if_.eflags = FLAG_IF | FLAG_MBS;
-  success = load (file_name, &if_.eip, &if_.esp);
+  success = load (file_name[0], &if_.eip, &if_.esp);
 
   /* If load failed, quit. */
   palloc_free_page (file_name);
   if (!success)
     thread_exit ();
+
+  /* Determine argc. */
+  int argc = 0;
+  while (file_name[argc] != NULL) {
+    ++argc;
+  }
+
+  /* Set up temporary array to track pointers to args on stack. */
+  void *argv[argc];
+
+  /* Push arguments onto stack, right to left. */
+  int i; 
+  for (i = argc - 1; i >= 0; --i) {
+    /* Decrement the stack pointer by the size of the char[] pushed. */
+    int size_str = sizeof(char) * strlen(file_name[i]);
+    if_.esp -= size_str;
+    /* Copy each arg string onto the stack. */
+    memcpy(if_.esp, file_name[i], size_str);
+    /* Save the current stack pointer to use in argv. */
+    argv[i] = if_.esp;
+  }
+
+  /* Ensure esp is word aligned (a multiple of 4). */
+  uint32_t esp_align = (uint32_t) if_.esp % 4;
+  if (esp_align != 0) {
+    if_.esp -= esp_align;
+  }
+
+  /* Decrement the stack pointer by the size of a pointer. */
+  if_.esp -= sizeof(argv[0]);
+  /* Push null pointer sentinel onto stack as the end of argv. */
+  memcpy(if_.esp, 0, sizeof(argv[0]));
+
+  for (i = argc - 1; i >= 0; --i) {
+    /* Decrement the stack pointer by the size of a pointer. */
+    if_.esp -= sizeof(argv[i]);
+    /* Push the stack pointers comprising argv. */
+    memcpy(if_.esp, argv[i], sizeof(argv[i]));
+  }
+
+  /* Decrement the stack pointer by the size of a pointer. */
+  void *esp_save = if_.esp;
+  if_.esp -= sizeof(argv[0]);
+  /* Push pointer to the base of argv on the stack. */
+  memcpy(if_.esp, &esp_save, sizeof(argv[0]));
+
+  /* Decrement the stack pointer by the size of an int. */
+  if_.esp -= sizeof(argc);
+  /* Push argc. */
+  memcpy(if_.esp, &argc, sizeof(argc));
+
+  /* Decrement the stack pointer by the size of a pointer. */
+  if_.esp -= sizeof(argv[0]);
+  /* Push return address (NULL). */
+  memcpy(if_.esp, 0, sizeof(int));
 
   /* Start the user process by simulating a return from an
      interrupt, implemented by intr_exit (in
