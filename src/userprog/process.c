@@ -15,11 +15,19 @@
 #include "threads/init.h"
 #include "threads/interrupt.h"
 #include "threads/palloc.h"
+#include "threads/malloc.h"
 #include "threads/thread.h"
 #include "threads/vaddr.h"
 
 static thread_func start_process NO_RETURN;
+struct list fd_list;
 static bool load (const char *cmdline, void (**eip) (void), void **esp);
+
+struct fd_elem {
+  int fd;
+  struct file *file;
+  struct list_elem elem;
+};
 
 /* Starts a new thread running a user program loaded from
    FILENAME.  The new thread may be scheduled (and may even exit)
@@ -67,6 +75,9 @@ start_process (void *file_name_)
   char **file_name = file_name_;
   struct intr_frame if_;
   bool success;
+
+  /* Initialize the list of file descriptors */
+  list_init(&fd_list);
 
   /* Initialize interrupt frame and load executable. */
   memset (&if_, 0, sizeof if_);
@@ -155,7 +166,7 @@ start_process (void *file_name_)
    This function will be implemented in problem 2-2.  For now, it
    does nothing. */
 int
-process_wait (tid_t child_tid UNUSED)
+process_wait (tid_t child_tid)
 {
   while(true) {} // TODO: Remove with proper implementation
   return -1;
@@ -200,6 +211,57 @@ process_activate (void)
   /* Set thread's kernel stack for use in processing
      interrupts. */
   tss_update ();
+}
+
+/* Adds file to the file descriptor and returns the new file descriptor */
+
+int process_generate_fd(struct file *file) {
+  int fd = 2;
+  struct list_elem *e;
+
+  for (e = list_begin(&fd_list); e != list_end(&fd_list); e = list_next(e)) {
+    struct fd_elem* f = list_entry(e, struct fd_elem, elem);
+
+    /* Found a gap in the list so break out of for loop */
+    if (f->fd != fd) {
+      break;
+    }
+  }
+
+  struct fd_elem *f = malloc(sizeof(struct fd_elem));
+  f->fd = fd;
+  f->file = file;
+  list_insert(list_next(e), &f->elem);
+
+  return fd;
+}
+
+struct file* process_get_file(int fd) {
+  struct list_elem *e;
+  for (e = list_begin(&fd_list); e != list_end(&fd_list); e = list_next(e)) {
+    struct fd_elem* f = list_entry(e, struct fd_elem, elem);
+
+    /* Found a gap in the list so break out of for loop */
+    if (f->fd == fd) {
+      return f->file;
+    }
+  }
+
+  return NULL;
+}
+
+void process_remove_fds(struct file *file) {
+  struct list_elem *e;
+  for (e = list_begin(&fd_list); e != list_end(&fd_list); e = list_next(e)) {
+    struct fd_elem* f = list_entry(e, struct fd_elem, elem);
+
+    /* Found the file in the table so remove the fd_elem */
+    if (f->file == file) {
+      list_remove(e);
+      struct fd_elem* fd_elem = list_entry(e, struct fd_elem, elem);
+      free(fd_elem);
+    }
+  }
 }
 
 /* We load ELF binaries.  The following definitions are taken
