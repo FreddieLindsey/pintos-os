@@ -84,10 +84,10 @@ start_process (void *file_name_)
   if_.gs = if_.fs = if_.es = if_.ds = if_.ss = SEL_UDSEG;
   if_.cs = SEL_UCSEG;
   if_.eflags = FLAG_IF | FLAG_MBS;
-  success = load (file_name[0], &if_.eip, &if_.esp);
+  success = load (*file_name, &if_.eip, &if_.esp);
 
   /* If load failed, quit. */
-  palloc_free_page (file_name);
+  palloc_free_page (*file_name);
   if (!success)
     thread_exit ();
 
@@ -101,16 +101,19 @@ start_process (void *file_name_)
   void *argv[argc];
 
   /* Push arguments onto stack, right to left. */
-  int i; 
+  int i;
+  int offset = if_.esp;
   for (i = argc - 1; i >= 0; --i) {
     /* Decrement the stack pointer by the size of the char[] pushed. */
-    int size_str = sizeof(char) * strlen(file_name[i]);
+    int size_str = sizeof(char) * (strlen(file_name[i]) + 1);
     if_.esp -= size_str;
     /* Copy each arg string onto the stack. */
     memcpy(if_.esp, file_name[i], size_str);
     /* Save the current stack pointer to use in argv. */
     argv[i] = if_.esp;
   }
+  size_t viewing = offset - (size_t) if_.esp;
+  hex_dump(offset, if_.esp, viewing, true);
 
   /* Ensure esp is word aligned (a multiple of 4). */
   uint32_t esp_align = (uint32_t) if_.esp % 4;
@@ -168,7 +171,7 @@ start_process (void *file_name_)
 int
 process_wait (tid_t child_tid)
 {
-  while(true) {} // TODO: Remove with proper implementation
+  while(true) { printf("Hello.... is it me you're looking for?\n"); } // TODO: Remove with proper implementation
   return -1;
 }
 
@@ -354,11 +357,16 @@ load (const char *file_name, void (**eip) (void), void **esp)
   process_activate ();
 
   /* Open executable file. */
-  file = filesys_open (file_name);
+  printf ("Opening:\t%s\n", &file_name);
+  file = filesys_open (&file_name);
   if (file == NULL)
     {
-      printf ("load: %s: open failed\n", file_name);
+      printf ("Open failed:\t%s\n", &file_name);
       goto done;
+    }
+  else
+    {
+      printf ("Loaded:\t\t%s\n", &file_name);
     }
 
   /* Read and verify executable header. */
@@ -569,7 +577,7 @@ setup_stack (void **esp)
     {
       success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true);
       if (success)
-        *esp = PHYS_BASE;
+        *esp = PHYS_BASE - 12;
       else
         palloc_free_page (kpage);
     }
