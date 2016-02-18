@@ -766,6 +766,7 @@ thread_schedule_tail (struct thread *prev)
       /* Free the allocated list elements */
       free_priority_list(&prev->priorities);
       free_priority_list(&prev->donations);
+      free_children_list(&prev->children);
       palloc_free_page (prev);
     }
 }
@@ -775,6 +776,15 @@ void free_priority_list(struct list *l) {
   while (!list_empty(l)) {
     struct list_elem *e = list_pop_front(l);
     struct priority_elem *p =  list_entry(e, struct priority_elem, elem);
+    free(p);
+  }
+}
+
+/* Frees the elements in a list of priority_elem */
+void free_children_list(struct list *l) {
+  while (!list_empty(l)) {
+    struct list_elem *e = list_pop_front(l);
+    struct priority_elem *p =  list_entry(e, struct tid_elem, elem);
     free(p);
   }
 }
