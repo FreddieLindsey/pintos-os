@@ -168,10 +168,27 @@ start_process (void *file_name_)
 
    This function will be implemented in problem 2-2.  For now, it
    does nothing. */
+
+// NB: if thread is destroyed, then terminated by kernel, otherwise, terminated
+// if pagedir == NULL     
 int
 process_wait (tid_t child_tid)
 {
-  while(true) { printf("Hello.... is it me you're looking for?\n"); } // TODO: Remove with proper implementation
+  /* Try to find thread */
+  struct thread *t = thread_find_thread(child_tid);
+  printf("%d\n", t->tid);
+
+
+  /* Check if TID is invalid and it is not child of calling process */
+  if (t == NULL)
+    return -1;
+
+
+  /* Check if process_wait() has already been called */
+
+
+  /* Wait until termination */
+  while(true) {} // TODO: Remove with proper implementation
   return -1;
 }
 
