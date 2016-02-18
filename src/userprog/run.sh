@@ -2,6 +2,8 @@
 
 make
 
+[ $? != 0 ] && exit $?
+
 echo -e "\n\n\n\n\n\nSTARTING NOW\n\n\n\n\n\n\n\n"
 
 pintos-mkdisk filesys.dsk --filesys-size=2
