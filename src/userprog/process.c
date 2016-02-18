@@ -60,9 +60,10 @@ process_execute (const char *file_name)
 
   /* Create a new thread to execute FILE_NAME. */
   tid = thread_create (file_name, PRI_DEFAULT, start_process, args[0]);
-  if (tid == TID_ERROR)
+  if (tid == TID_ERROR) {
     palloc_free_page (fn_copy);
     palloc_free_page (args);
+  }
     // TODO: Potentially need to free args elsewhere also
   return tid;
 }
@@ -85,6 +86,7 @@ start_process (void *file_name_)
   if_.cs = SEL_UCSEG;
   if_.eflags = FLAG_IF | FLAG_MBS;
   success = load (*file_name, &if_.eip, &if_.esp);
+  printf("Fuck %d\n", success);
 
   /* If load failed, quit. */
   palloc_free_page (*file_name);
@@ -155,6 +157,7 @@ start_process (void *file_name_)
      arguments on the stack in the form of a `struct intr_frame',
      we just point the stack pointer (%esp) to our stack frame
      and jump to it. */
+  printf("volatile\n");
   asm volatile ("movl %0, %%esp; jmp intr_exit" : : "g" (&if_) : "memory");
   NOT_REACHED ();
 }
@@ -174,19 +177,27 @@ start_process (void *file_name_)
 int
 process_wait (tid_t child_tid)
 {
+
   /* Try to find thread */
   struct thread *t = thread_find_thread(child_tid);
 
   /* Check if TID is invalid and it is not child of calling process */
-  if (t == NULL || !thread_is_child(t->tid))
+  if (t == NULL) //||) !thread_is_child(t->tid))
     return -1;
 
   /* Check if process_wait() has already been called */
   if(t->waited_upon)
     return -1;
+
   t->waited_upon = 1;
   /* Wait until termination either by kernel or process_exit */
-  while(t == NULL || t->pagedir == NULL) {thread_yield();} // TODO: Remove with proper implementation
+  while (!t->process_init) { thread_yield(); } // Hold until process_init
+  while(!(t == NULL || t->pagedir == NULL)) {
+    thread_yield();
+  }
+
+  printf("Exited!\n\n\n");
+
   /* If terminated by kernel */
   if (t == NULL)
     return -1;
@@ -371,6 +382,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
 
   /* Allocate and activate page directory. */
   t->pagedir = pagedir_create ();
+  t->process_init = 1; // Signal that the process has started
   if (t->pagedir == NULL)
     goto done;
   process_activate ();
@@ -400,6 +412,9 @@ load (const char *file_name, void (**eip) (void), void **esp)
       printf ("load: %s: error loading executable\n", file_name);
       goto done;
     }
+  printf("Loaded executable!\n");
+
+  // TODO: WE DEFINITELY GET TO HERE.
 
   /* Read program headers. */
   file_ofs = ehdr.e_phoff;
@@ -460,6 +475,8 @@ load (const char *file_name, void (**eip) (void), void **esp)
         }
     }
 
+
+  printf("setting up stack\n\n");
   /* Set up stack. */
   if (!setup_stack (esp))
     goto done;
@@ -471,6 +488,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
 
  done:
   /* We arrive here whether the load is successful or not. */
+  printf("Do we really get this far Jamie?\n\n");
   file_close (file);
   return success;
 }
