@@ -170,7 +170,7 @@ start_process (void *file_name_)
    does nothing. */
 
 // NB: if thread is destroyed, then terminated by kernel, otherwise, terminated
-// if pagedir == NULL     
+// if pagedir == NULL
 int
 process_wait (tid_t child_tid)
 {
@@ -183,13 +183,15 @@ process_wait (tid_t child_tid)
   if (t == NULL)
     return -1;
 
-
   /* Check if process_wait() has already been called */
 
-
-  /* Wait until termination */
-  while(true) {} // TODO: Remove with proper implementation
-  return -1;
+  /* Wait until termination either by kernel or process_exit */
+  while(t == NULL || t->pagedir == NULL) {thread_yield();} // TODO: Remove with proper implementation
+  /* If terminated by kernel */
+  if (t == NULL)
+    return -1;
+  else
+    return t->exit_status;
 }
 
 /* Free the current process's resources. */
