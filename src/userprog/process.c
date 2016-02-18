@@ -60,9 +60,10 @@ process_execute (const char *file_name)
 
   /* Create a new thread to execute FILE_NAME. */
   tid = thread_create (file_name, PRI_DEFAULT, start_process, args[0]);
-  if (tid == TID_ERROR)
+  if (tid == TID_ERROR) {
     palloc_free_page (fn_copy);
     palloc_free_page (args);
+  }
     // TODO: Potentially need to free args elsewhere also
   return tid;
 }
@@ -84,10 +85,10 @@ start_process (void *file_name_)
   if_.gs = if_.fs = if_.es = if_.ds = if_.ss = SEL_UDSEG;
   if_.cs = SEL_UCSEG;
   if_.eflags = FLAG_IF | FLAG_MBS;
-  success = load (file_name[0], &if_.eip, &if_.esp);
+  success = load (*file_name, &if_.eip, &if_.esp);
 
   /* If load failed, quit. */
-  palloc_free_page (file_name);
+  palloc_free_page (*file_name);
   if (!success)
     thread_exit ();
 
@@ -101,10 +102,10 @@ start_process (void *file_name_)
   void *argv[argc];
 
   /* Push arguments onto stack, right to left. */
-  int i; 
+  int i;
   for (i = argc - 1; i >= 0; --i) {
     /* Decrement the stack pointer by the size of the char[] pushed. */
-    int size_str = sizeof(char) * strlen(file_name[i]);
+    int size_str = sizeof(char) * (strlen(file_name[i]) + 1);
     if_.esp -= size_str;
     /* Copy each arg string onto the stack. */
     memcpy(if_.esp, file_name[i], size_str);
@@ -165,11 +166,36 @@ start_process (void *file_name_)
 
    This function will be implemented in problem 2-2.  For now, it
    does nothing. */
+
+// NB: if thread is destroyed, then terminated by kernel, otherwise, terminated
+// if pagedir == NULL
 int
 process_wait (tid_t child_tid)
 {
-  while(true) {} // TODO: Remove with proper implementation
-  return -1;
+
+  /* Try to find thread */
+  struct thread *t = thread_find_thread(child_tid);
+
+  /* Check if TID is invalid and it is not child of calling process */
+  if (t == NULL) //||) !thread_is_child(t->tid))
+    return -1;
+
+  /* Check if process_wait() has already been called */
+  if(t->waited_upon)
+    return -1;
+
+  t->waited_upon = 1;
+  /* Wait until termination either by kernel or process_exit */
+  while (!t->process_init) { thread_yield(); } // Hold until process_init
+  while(!(t == NULL || t->pagedir == NULL)) {
+    thread_yield();
+  }
+
+  /* If terminated by kernel */
+  if (t == NULL)
+    return -1;
+  else
+    return t->exit_status;
 }
 
 /* Free the current process's resources. */
@@ -349,16 +375,22 @@ load (const char *file_name, void (**eip) (void), void **esp)
 
   /* Allocate and activate page directory. */
   t->pagedir = pagedir_create ();
+  t->process_init = 1; // Signal that the process has started
   if (t->pagedir == NULL)
     goto done;
   process_activate ();
 
   /* Open executable file. */
-  file = filesys_open (file_name);
+  printf ("Opening:\t%s\n", &file_name);
+  file = filesys_open (&file_name);
   if (file == NULL)
     {
-      printf ("load: %s: open failed\n", file_name);
+      printf ("Open failed:\t%s\n", &file_name);
       goto done;
+    }
+  else
+    {
+      printf ("Loaded:\t\t%s\n", &file_name);
     }
 
   /* Read and verify executable header. */
@@ -373,6 +405,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
       printf ("load: %s: error loading executable\n", file_name);
       goto done;
     }
+  printf("Loaded executable!\n");
 
   /* Read program headers. */
   file_ofs = ehdr.e_phoff;
@@ -423,16 +456,20 @@ load (const char *file_name, void (**eip) (void), void **esp)
                   read_bytes = 0;
                   zero_bytes = ROUND_UP (page_offset + phdr.p_memsz, PGSIZE);
                 }
+
+              // TODO: FAILS HERE!!!
+
               if (!load_segment (file, file_page, (void *) mem_page,
                                  read_bytes, zero_bytes, writable))
                 goto done;
             }
           else
             goto done;
-          break;
         }
     }
 
+
+  printf("setting up stack\n\n");
   /* Set up stack. */
   if (!setup_stack (esp))
     goto done;
@@ -444,6 +481,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
 
  done:
   /* We arrive here whether the load is successful or not. */
+  printf("Do we really get this far Jamie?\n\n");
   file_close (file);
   return success;
 }
@@ -569,7 +607,7 @@ setup_stack (void **esp)
     {
       success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true);
       if (success)
-        *esp = PHYS_BASE;
+        *esp = PHYS_BASE - 12;
       else
         palloc_free_page (kpage);
     }
