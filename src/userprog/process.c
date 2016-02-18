@@ -86,7 +86,6 @@ start_process (void *file_name_)
   if_.cs = SEL_UCSEG;
   if_.eflags = FLAG_IF | FLAG_MBS;
   success = load (*file_name, &if_.eip, &if_.esp);
-  printf("Fuck %d\n", success);
 
   /* If load failed, quit. */
   palloc_free_page (*file_name);
@@ -104,7 +103,6 @@ start_process (void *file_name_)
 
   /* Push arguments onto stack, right to left. */
   int i;
-  int offset = if_.esp;
   for (i = argc - 1; i >= 0; --i) {
     /* Decrement the stack pointer by the size of the char[] pushed. */
     int size_str = sizeof(char) * (strlen(file_name[i]) + 1);
@@ -114,8 +112,6 @@ start_process (void *file_name_)
     /* Save the current stack pointer to use in argv. */
     argv[i] = if_.esp;
   }
-  size_t viewing = offset - (size_t) if_.esp;
-  hex_dump(offset, if_.esp, viewing, true);
 
   /* Ensure esp is word aligned (a multiple of 4). */
   uint32_t esp_align = (uint32_t) if_.esp % 4;
@@ -157,7 +153,6 @@ start_process (void *file_name_)
      arguments on the stack in the form of a `struct intr_frame',
      we just point the stack pointer (%esp) to our stack frame
      and jump to it. */
-  printf("volatile\n");
   asm volatile ("movl %0, %%esp; jmp intr_exit" : : "g" (&if_) : "memory");
   NOT_REACHED ();
 }
@@ -195,8 +190,6 @@ process_wait (tid_t child_tid)
   while(!(t == NULL || t->pagedir == NULL)) {
     thread_yield();
   }
-
-  printf("Exited!\n\n\n");
 
   /* If terminated by kernel */
   if (t == NULL)
@@ -414,8 +407,6 @@ load (const char *file_name, void (**eip) (void), void **esp)
     }
   printf("Loaded executable!\n");
 
-  // TODO: WE DEFINITELY GET TO HERE.
-
   /* Read program headers. */
   file_ofs = ehdr.e_phoff;
   for (i = 0; i < ehdr.e_phnum; i++)
@@ -465,13 +456,15 @@ load (const char *file_name, void (**eip) (void), void **esp)
                   read_bytes = 0;
                   zero_bytes = ROUND_UP (page_offset + phdr.p_memsz, PGSIZE);
                 }
+
+              // TODO: FAILS HERE!!!
+
               if (!load_segment (file, file_page, (void *) mem_page,
                                  read_bytes, zero_bytes, writable))
                 goto done;
             }
           else
             goto done;
-          break;
         }
     }
 
