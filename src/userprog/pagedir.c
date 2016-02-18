@@ -135,13 +135,16 @@ pagedir_get_page (uint32_t *pd, const void *uaddr)
 
   pte = lookup_page (pd, uaddr, false);
   if (pte != NULL && (*pte & PTE_P) != 0)
-    /* Case 3: address is mapped, and corresponds to a physical address */
-    return pte_get_page (*pte) + pg_ofs (uaddr);
-  else {
-    /* Case 4: address is unmapped */
-    thread_exit();
-    return NULL;
-  }
+    {
+      /* Case 3: address is mapped, and corresponds to a physical address */
+      return pte_get_page (*pte) + pg_ofs (uaddr);
+    }
+  else
+    {
+      /* Case 4: address is unmapped */
+      thread_exit(); // TODO: PROBLEM -> NOT ALLOWING PROCESSES TO START
+    }
+  return NULL;
 }
 
 /* Marks user virtual page UPAGE "not present" in page
