@@ -176,15 +176,15 @@ process_wait (tid_t child_tid)
 {
   /* Try to find thread */
   struct thread *t = thread_find_thread(child_tid);
-  printf("%d\n", t->tid);
-
 
   /* Check if TID is invalid and it is not child of calling process */
-  if (t == NULL)
+  if (t == NULL || !thread_is_child(t->tid))
     return -1;
 
   /* Check if process_wait() has already been called */
-
+  if(t->waited_upon)
+    return -1;
+  t->waited_upon = 1;
   /* Wait until termination either by kernel or process_exit */
   while(t == NULL || t->pagedir == NULL) {thread_yield();} // TODO: Remove with proper implementation
   /* If terminated by kernel */

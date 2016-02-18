@@ -202,6 +202,10 @@ thread_create (const char *name, int priority,
   init_thread (t, name, priority);
   tid = t->tid = allocate_tid ();
 
+  struct tid_elem* tid_elem = malloc(sizeof(struct tid_elem));
+  tid_elem->tid = tid;
+  list_push_back(&thread_current()->children, &tid_elem->elem);
+
   /* Prepare thread for first run by initializing its stack.
      Do this atomically so intermediate values for the 'stack'
      member cannot be observed. */
@@ -230,6 +234,22 @@ thread_create (const char *name, int priority,
   thread_run_top();
 
   return tid;
+}
+
+bool thread_is_child(tid_t tid) {
+  struct list_elem *e;
+  struct thread *t = thread_current();
+
+  for (e = list_begin (&t->children); e != list_end (&t->children);
+       e = list_next (e))
+    {
+      struct thread *t = list_entry (e, struct thread, elem);
+      if(t->tid == tid)
+        return true;
+    }
+
+  return false;
+
 }
 
 /* Puts the current thread to sleep.  It will not be scheduled
@@ -622,6 +642,8 @@ init_thread (struct thread *t, const char *name, int priority)
   list_init(&t->priorities);
   /* This is the initialisation for the list of donations given */
   list_init(&t->donations);
+  /* THis is the initialisation for the list of child threads */
+  list_init(&t->children);
 
   sema_init(&t->sema, 0);
 

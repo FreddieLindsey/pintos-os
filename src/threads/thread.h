@@ -99,6 +99,10 @@ struct thread
     int nice;
     int recent_cpu;
 
+    int waited_upon;                /* Flag indicating whether its parent
+                                        is waiting on it */
+    struct list children;               /* List of child threads */
+
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
 
@@ -123,6 +127,11 @@ struct priority_elem {
   struct list_elem elem;
 };
 
+struct tid_elem {
+  tid_t tid;                         /* tid of thread */
+  struct list_elem elem;
+};
+
 /* If false (default), use round-robin scheduler.
    If true, use multi-level feedback queue scheduler.
    Controlled by kernel command-line option "-o mlfqs". */
@@ -137,6 +146,7 @@ void thread_print_stats (void);
 
 typedef void thread_func (void *aux);
 tid_t thread_create (const char *name, int priority, thread_func *, void *);
+bool thread_is_child(tid_t tid);
 
 void thread_block (void);
 void thread_unblock (struct thread *);
