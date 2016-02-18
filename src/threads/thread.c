@@ -205,7 +205,6 @@ thread_create (const char *name, int priority,
   struct tid_elem* tid_elem = malloc(sizeof(struct tid_elem));
   tid_elem->tid = tid;
   list_push_back(&thread_current()->children, &tid_elem->elem);
-
   /* Prepare thread for first run by initializing its stack.
      Do this atomically so intermediate values for the 'stack'
      member cannot be observed. */
@@ -580,7 +579,6 @@ static void
 kernel_thread (thread_func *function, void *aux)
 {
   ASSERT (function != NULL);
-
   intr_enable ();       /* The scheduler runs with interrupts off. */
   function (aux);       /* Execute the thread function. */
   thread_exit ();       /* If function() returns, kill the thread. */
