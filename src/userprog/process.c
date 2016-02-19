@@ -104,6 +104,8 @@ start_process (void *file_name_)
   /* Set up temporary array to track pointers to args on stack. */
   void *argv[argc];
 
+  int offset = if_.esp; // TODO: Remove
+
   /* Push arguments onto stack, right to left. */
   int i;
   for (i = argc - 1; i >= 0; --i) {
@@ -151,6 +153,10 @@ start_process (void *file_name_)
   /* Push return address (NULL). */
   memcpy(if_.esp, sentinel, sizeof(int));
 
+  offset -= (int) if_.esp;
+
+  // hex_dump(if_.esp, if_.esp, (offset - (int) if_.esp), true);
+
   /* Start the user process by simulating a return from an
      interrupt, implemented by intr_exit (in
      threads/intr-stubs.S).  Because intr_exit takes all of its
@@ -192,6 +198,7 @@ process_wait (tid_t child_tid)
   /* Wait until termination either by kernel or process_exit */
   while (!t->process_init) { thread_yield(); } // Hold until process_init
   while(!(t == NULL || t->pagedir == NULL)) {
+    t = thread_find_thread(child_tid);
     thread_yield();
   }
 
