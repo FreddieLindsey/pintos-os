@@ -99,6 +99,10 @@ struct thread
     int nice;
     int recent_cpu;
 
+    int waited_upon;                /* Flag indicating whether its parent
+                                        is waiting on it */
+    struct list children;               /* List of child threads */
+
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
 
@@ -108,6 +112,7 @@ struct thread
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
     uint32_t *pagedir;                  /* Page directory. */
+    int process_init;                   /* Process initiated */
 #endif
 
     /* Owned by thread.c. */
@@ -120,6 +125,11 @@ struct priority_elem {
   int priority;                        /* Actual priority value */
   struct lock *lock;                   /* Lock for which needed to be acquired */
   struct thread* t;                     /* Thread which received the donation */
+  struct list_elem elem;
+};
+
+struct tid_elem {
+  tid_t tid;                         /* tid of thread */
   struct list_elem elem;
 };
 
@@ -137,6 +147,7 @@ void thread_print_stats (void);
 
 typedef void thread_func (void *aux);
 tid_t thread_create (const char *name, int priority, thread_func *, void *);
+bool thread_is_child(tid_t tid);
 
 void thread_block (void);
 void thread_unblock (struct thread *);
@@ -160,6 +171,7 @@ void thread_yield (void);
 /* Performs some operation on thread t, given auxiliary data AUX. */
 typedef void thread_action_func (struct thread *t, void *aux);
 void thread_foreach (thread_action_func *, void *);
+struct thread * thread_find_thread(tid_t tid);
 
 int thread_get_priority (void);
 int thread_get_priority_of(struct thread *t);
