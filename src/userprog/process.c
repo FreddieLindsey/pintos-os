@@ -59,7 +59,7 @@ process_execute (const char *file_name)
   args[j] = NULL;
 
   /* Create a new thread to execute FILE_NAME. */
-  tid = thread_create (file_name, PRI_DEFAULT, start_process, args[0]);
+  tid = thread_create (file_name, PRI_DEFAULT, start_process, args);
   if (tid == TID_ERROR) {
     palloc_free_page (fn_copy);
     palloc_free_page (args);
@@ -85,18 +85,21 @@ start_process (void *file_name_)
   if_.gs = if_.fs = if_.es = if_.ds = if_.ss = SEL_UDSEG;
   if_.cs = SEL_UCSEG;
   if_.eflags = FLAG_IF | FLAG_MBS;
-  success = load (*file_name, &if_.eip, &if_.esp);
+  success = load (file_name[0], &if_.eip, &if_.esp);
 
   /* If load failed, quit. */
-  palloc_free_page (*file_name);
-  if (!success)
+  if (!success) {
+    palloc_free_page (file_name[0]);
     thread_exit ();
+  }
 
   /* Determine argc. */
   int argc = 0;
   while (file_name[argc] != NULL) {
     ++argc;
   }
+
+  printf("Number of arguments:\t%d\n", argc);
 
   /* Set up temporary array to track pointers to args on stack. */
   void *argv[argc];
@@ -122,7 +125,8 @@ start_process (void *file_name_)
   /* Decrement the stack pointer by the size of a pointer. */
   if_.esp -= sizeof(argv[0]);
   /* Push null pointer sentinel onto stack as the end of argv. */
-  memcpy(if_.esp, 0, sizeof(argv[0]));
+  char* sentinel = "";
+  memcpy(if_.esp, sentinel, sizeof(argv[0]));
 
   for (i = argc - 1; i >= 0; --i) {
     /* Decrement the stack pointer by the size of a pointer. */
@@ -145,7 +149,7 @@ start_process (void *file_name_)
   /* Decrement the stack pointer by the size of a pointer. */
   if_.esp -= sizeof(argv[0]);
   /* Push return address (NULL). */
-  memcpy(if_.esp, 0, sizeof(int));
+  memcpy(if_.esp, sentinel, sizeof(int));
 
   /* Start the user process by simulating a return from an
      interrupt, implemented by intr_exit (in
@@ -381,16 +385,16 @@ load (const char *file_name, void (**eip) (void), void **esp)
   process_activate ();
 
   /* Open executable file. */
-  printf ("Opening:\t%s\n", &file_name);
-  file = filesys_open (&file_name);
+  printf ("Opening:\t%s\n", file_name);
+  file = filesys_open (file_name);
   if (file == NULL)
     {
-      printf ("Open failed:\t%s\n", &file_name);
+      printf ("Open failed:\t%s\n", file_name);
       goto done;
     }
   else
     {
-      printf ("Loaded:\t\t%s\n", &file_name);
+      printf ("Loaded:\t\t%s\n", file_name);
     }
 
   /* Read and verify executable header. */
@@ -468,8 +472,6 @@ load (const char *file_name, void (**eip) (void), void **esp)
         }
     }
 
-
-  printf("setting up stack\n\n");
   /* Set up stack. */
   if (!setup_stack (esp))
     goto done;
@@ -481,7 +483,6 @@ load (const char *file_name, void (**eip) (void), void **esp)
 
  done:
   /* We arrive here whether the load is successful or not. */
-  printf("Do we really get this far Jamie?\n\n");
   file_close (file);
   return success;
 }

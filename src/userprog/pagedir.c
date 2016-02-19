@@ -139,11 +139,11 @@ pagedir_get_page (uint32_t *pd, const void *uaddr)
       /* Case 3: address is mapped, and corresponds to a physical address */
       return pte_get_page (*pte) + pg_ofs (uaddr);
     }
-  else
-    {
-      /* Case 4: address is unmapped */
-      thread_exit(); // TODO: PROBLEM -> NOT ALLOWING PROCESSES TO START
-    }
+  // else
+  //   {
+  //     /* Case 4: address is unmapped */
+  //     thread_exit(); // TODO: PROBLEM -> NOT ALLOWING PROCESSES TO START
+  //   }
   return NULL;
 }
 
