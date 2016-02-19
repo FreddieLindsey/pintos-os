@@ -202,6 +202,9 @@ thread_create (const char *name, int priority,
   init_thread (t, name, priority);
   tid = t->tid = allocate_tid ();
 
+  struct tid_elem* tid_elem = malloc(sizeof(struct tid_elem));
+  tid_elem->tid = tid;
+  list_push_back(&thread_current()->children, &tid_elem->elem);
   /* Prepare thread for first run by initializing its stack.
      Do this atomically so intermediate values for the 'stack'
      member cannot be observed. */
@@ -230,6 +233,24 @@ thread_create (const char *name, int priority,
   thread_run_top();
 
   return tid;
+}
+
+bool thread_is_child(tid_t tid) {
+  struct list_elem *e;
+  struct thread *t = thread_current();
+
+  for (e = list_begin (&t->children); e != list_end (&t->children);
+       e = list_next (e))
+    {
+      struct thread *t = list_entry (e, struct thread, elem);
+      if(t->tid == tid)
+        return true;
+    }
+
+  // FIXME: Potential false negative
+
+  return false;
+
 }
 
 /* Puts the current thread to sleep.  It will not be scheduled
@@ -380,6 +401,22 @@ thread_foreach (thread_action_func *func, void *aux)
       struct thread *t = list_entry (e, struct thread, allelem);
       func (t, aux);
     }
+}
+
+struct thread * thread_find_thread(tid_t tid) {
+  struct list_elem *e;
+
+  for (e = list_begin (&all_list); e != list_end (&all_list);
+       e = list_next (e))
+    {
+      struct thread *t = list_entry (e, struct thread, allelem);
+      if(t->tid == tid) {
+        return t;
+      }
+    }
+
+  return NULL;
+
 }
 
 /* Sets the current thread's priority to NEW_PRIORITY. */
@@ -544,7 +581,6 @@ static void
 kernel_thread (thread_func *function, void *aux)
 {
   ASSERT (function != NULL);
-
   intr_enable ();       /* The scheduler runs with interrupts off. */
   function (aux);       /* Execute the thread function. */
   thread_exit ();       /* If function() returns, kill the thread. */
@@ -606,6 +642,8 @@ init_thread (struct thread *t, const char *name, int priority)
   list_init(&t->priorities);
   /* This is the initialisation for the list of donations given */
   list_init(&t->donations);
+  /* THis is the initialisation for the list of child threads */
+  list_init(&t->children);
 
   sema_init(&t->sema, 0);
 
@@ -728,6 +766,7 @@ thread_schedule_tail (struct thread *prev)
       /* Free the allocated list elements */
       free_priority_list(&prev->priorities);
       free_priority_list(&prev->donations);
+      free_children_list(&prev->children);
       palloc_free_page (prev);
     }
 }
@@ -737,6 +776,15 @@ void free_priority_list(struct list *l) {
   while (!list_empty(l)) {
     struct list_elem *e = list_pop_front(l);
     struct priority_elem *p =  list_entry(e, struct priority_elem, elem);
+    free(p);
+  }
+}
+
+/* Frees the elements in a list of priority_elem */
+void free_children_list(struct list *l) {
+  while (!list_empty(l)) {
+    struct list_elem *e = list_pop_front(l);
+    struct priority_elem *p =  list_entry(e, struct tid_elem, elem);
     free(p);
   }
 }
