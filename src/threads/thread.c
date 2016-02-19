@@ -247,6 +247,8 @@ bool thread_is_child(tid_t tid) {
         return true;
     }
 
+  // FIXME: Potential false negative
+
   return false;
 
 }
