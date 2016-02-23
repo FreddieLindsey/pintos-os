@@ -24,7 +24,7 @@ syscall_init (void)
 static void
 syscall_handler (struct intr_frame *f)
 {
-  printf ("system call start!\n");
+  printf("system call\n");
   /* Read the number of the system call */
   int syscall_num = *(int*)(f->esp);
 
@@ -50,10 +50,10 @@ syscall_handler (struct intr_frame *f)
     case SYS_FILESIZE: read_args(f->esp, 1, args);
                        f->eax = filesize(*(int*)args[0]); break;
     case SYS_READ: read_args(f->esp, 3, args);
-                   f->eax = read(*(int*)args[0], args[1], *(unsigned*)args[2]);
+                   f->eax = read(*(int*)args[0], *(void**)args[1], *(unsigned*)args[2]);
                    break;
     case SYS_WRITE: read_args(f->esp, 3, args);
-                    f->eax = write(*(int*)args[0], args[1], *(unsigned*)args[2]);
+                    f->eax = write(*(int*)args[0], *(void**)args[1], *(unsigned*)args[2]);
                     break;
     case SYS_SEEK: read_args(f->esp, 2, args);
                    seek(*(int*)args[0], *(unsigned*)args[1]); break;
@@ -62,9 +62,6 @@ syscall_handler (struct intr_frame *f)
     case SYS_CLOSE: read_args(f->esp, 1, args);
                      (*(int*)args[0]); break;
   }
-
-  printf ("system call!\n");
-  thread_exit ();
 }
 
 /* Reads num arguments from esp and stores them in args */
@@ -75,7 +72,6 @@ void read_args(void* esp, int num, void** args) {
     p += 4;
     args[i] = p;
   }
-
 }
 
 void halt (void) {
@@ -132,13 +128,17 @@ int filesize (int fd) {
 }
 
 int read (int fd, void *buffer, unsigned length) {
+  if (fd == STDIN_FILENO) {
+    input_getc();
+    return length;
+  }
   struct file *file = process_get_file(fd);
   return file_read(file, buffer, length);
 }
 
 int write (int fd, const void *buffer, unsigned length) {
   if (fd == STDOUT_FILENO) {
-    putbuf((char*)buffer, length);
+    putbuf(buffer, length);
     return length;
   }
   struct file *file = process_get_file(fd);
