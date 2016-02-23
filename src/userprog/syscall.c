@@ -24,9 +24,9 @@ syscall_init (void)
 static void
 syscall_handler (struct intr_frame *f)
 {
+  printf ("system call start!\n");
   /* Read the number of the system call */
   int syscall_num = *(int*)(f->esp);
-
 
   /* array which holds the arguments of the system call */
   /* also passes to the appropriate function */
@@ -72,9 +72,10 @@ void read_args(void* esp, int num, void** args) {
   int i = 0;
   void* p = esp;
   for (; i < num; i++) {
-    p++;
+    p += 4;
     args[i] = p;
   }
+
 }
 
 void halt (void) {
@@ -136,6 +137,10 @@ int read (int fd, void *buffer, unsigned length) {
 }
 
 int write (int fd, const void *buffer, unsigned length) {
+  if (fd == STDOUT_FILENO) {
+    putbuf((char*)buffer, length);
+    return length;
+  }
   struct file *file = process_get_file(fd);
   return file_write(file, buffer, length);
 }
