@@ -74,6 +74,7 @@ static void
 start_process (void *file_name_)
 {
   char **file_name = file_name_;
+  thread_current()->proc_name = file_name[0];
   struct intr_frame if_;
   bool success;
 
@@ -98,8 +99,6 @@ start_process (void *file_name_)
   while (file_name[argc] != NULL) {
     ++argc;
   }
-
-  printf("Number of arguments:\t%d\n", argc);
 
   /* Set up temporary array to track pointers to args on stack. */
   char *argv[argc];
@@ -197,6 +196,7 @@ process_wait (tid_t child_tid)
   while(!(t == NULL || t->pagedir == NULL)) {
     t = thread_find_thread(child_tid);
     thread_yield();
+
   }
 
   /* If terminated by kernel */
@@ -229,6 +229,7 @@ process_exit (void)
       pagedir_activate (NULL);
       pagedir_destroy (pd);
     }
+
 }
 
 /* Sets up the CPU for running user code in the current
@@ -389,17 +390,13 @@ load (const char *file_name, void (**eip) (void), void **esp)
   process_activate ();
 
   /* Open executable file. */
-  printf ("Opening:\t%s\n", file_name);
   file = filesys_open (file_name);
   if (file == NULL)
     {
       printf ("Open failed:\t%s\n", file_name);
       goto done;
     }
-  else
-    {
-      printf ("Loaded:\t\t%s\n", file_name);
-    }
+
 
   /* Read and verify executable header. */
   if (file_read (file, &ehdr, sizeof ehdr) != sizeof ehdr
@@ -413,7 +410,6 @@ load (const char *file_name, void (**eip) (void), void **esp)
       printf ("load: %s: error loading executable\n", file_name);
       goto done;
     }
-  printf("Loaded executable!\n");
 
   /* Read program headers. */
   file_ofs = ehdr.e_phoff;

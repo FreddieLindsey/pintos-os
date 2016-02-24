@@ -113,6 +113,7 @@ struct thread
     /* Owned by userprog/process.c. */
     uint32_t *pagedir;                  /* Page directory. */
     int process_init;                   /* Process initiated */
+    char* proc_name;
 #endif
 
     /* Owned by thread.c. */

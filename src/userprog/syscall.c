@@ -24,7 +24,6 @@ syscall_init (void)
 static void
 syscall_handler (struct intr_frame *f)
 {
-  printf("system call\n");
   /* Read the number of the system call */
   int syscall_num = *(int*)(f->esp);
 
@@ -80,7 +79,9 @@ void halt (void) {
 
 void exit (int status) {
   thread_current()->exit_status = status;
+  printf ("%s: exit(%d)\n", thread_current()->proc_name, status);
   process_exit();
+  thread_yield();
 }
 
 pid_t exec (const char *file) {
