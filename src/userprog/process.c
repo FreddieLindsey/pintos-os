@@ -122,12 +122,11 @@ start_process (void *file_name_)
     if_.esp -= esp_align;
   }
 
-  char* sentinel = "";
-  printf("%s\n", sentinel);
+  char* sentinel = "null";
   /* Decrement the stack pointer by the size of a pointer. */
   if_.esp -= sizeof(sentinel);
   /* Push null pointer sentinel onto stack as the end of argv. */
-  memcpy(if_.esp, sentinel, sizeof(sentinel));
+  *(char*)if_.esp = '\0';
 
   for (i = argc - 1; i >= 0; --i) {
     /* Decrement the stack pointer by the size of a pointer. */
@@ -137,7 +136,7 @@ start_process (void *file_name_)
   }
 
   /* Decrement the stack pointer by the size of a pointer. */
-  char *esp_save = if_.esp;
+  char **esp_save = if_.esp;
   if_.esp -= sizeof(argv[0]);
   /* Push pointer to the base of argv on the stack. */
   memcpy(if_.esp, &esp_save, sizeof(argv[0]));
