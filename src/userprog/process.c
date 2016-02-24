@@ -102,9 +102,7 @@ start_process (void *file_name_)
   printf("Number of arguments:\t%d\n", argc);
 
   /* Set up temporary array to track pointers to args on stack. */
-  void *argv[argc];
-
-  int offset = if_.esp; // TODO: Remove
+  char *argv[argc];
 
   /* Push arguments onto stack, right to left. */
   int i;
@@ -124,21 +122,22 @@ start_process (void *file_name_)
     if_.esp -= esp_align;
   }
 
-  /* Decrement the stack pointer by the size of a pointer. */
-  if_.esp -= sizeof(argv[0]);
-  /* Push null pointer sentinel onto stack as the end of argv. */
   char* sentinel = "";
-  memcpy(if_.esp, sentinel, sizeof(argv[0]));
+  printf("%s\n", sentinel);
+  /* Decrement the stack pointer by the size of a pointer. */
+  if_.esp -= sizeof(sentinel);
+  /* Push null pointer sentinel onto stack as the end of argv. */
+  memcpy(if_.esp, sentinel, sizeof(sentinel));
 
   for (i = argc - 1; i >= 0; --i) {
     /* Decrement the stack pointer by the size of a pointer. */
     if_.esp -= sizeof(argv[i]);
     /* Push the stack pointers comprising argv. */
-    memcpy(if_.esp, argv[i], sizeof(argv[i]));
+    memcpy(if_.esp, &argv[i], sizeof(argv[i]));
   }
 
   /* Decrement the stack pointer by the size of a pointer. */
-  void *esp_save = if_.esp;
+  char *esp_save = if_.esp;
   if_.esp -= sizeof(argv[0]);
   /* Push pointer to the base of argv on the stack. */
   memcpy(if_.esp, &esp_save, sizeof(argv[0]));
@@ -153,8 +152,6 @@ start_process (void *file_name_)
   /* Push return address (NULL). */
   memcpy(if_.esp, sentinel, sizeof(int));
 
-  offset -= (int) if_.esp;
-
   // hex_dump(if_.esp, if_.esp, (offset - (int) if_.esp), true);
 
   /* Start the user process by simulating a return from an
@@ -163,6 +160,7 @@ start_process (void *file_name_)
      arguments on the stack in the form of a `struct intr_frame',
      we just point the stack pointer (%esp) to our stack frame
      and jump to it. */
+
   asm volatile ("movl %0, %%esp; jmp intr_exit" : : "g" (&if_) : "memory");
   NOT_REACHED ();
 }
