@@ -6,6 +6,8 @@
 #include "devices/shutdown.h"
 #include "filesys/filesys.h"
 #include "filesys/file.h"
+#include "userprog/pagedir.h"
+#include "threads/vaddr.h"
 
 #define MAX_ARGS 3
 
@@ -24,9 +26,12 @@ syscall_init (void)
 static void
 syscall_handler (struct intr_frame *f)
 {
+  /* Checks if stack pointer is valid */
+  if (!pagedir_get_page(thread_current()->pagedir, f->esp)) {
+    exit(-1);
+  }
   /* Read the number of the system call */
   int syscall_num = *(int*)(f->esp);
-
   /* array which holds the arguments of the system call */
   /* also passes to the appropriate function */
   void* args[MAX_ARGS];
