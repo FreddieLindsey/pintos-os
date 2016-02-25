@@ -27,9 +27,7 @@ static void
 syscall_handler (struct intr_frame *f)
 {
   /* Checks if stack pointer is valid */
-  if (!pagedir_get_page(thread_current()->pagedir, f->esp)) {
-    exit(-1);
-  }
+  check_valid_ptr(f->esp);
   /* Read the number of the system call */
   int syscall_num = *(int*)(f->esp);
   /* array which holds the arguments of the system call */
@@ -105,14 +103,12 @@ int wait (pid_t pid) {
 bool create (const char *file, unsigned initial_size) {
 
   /* Checks if file is null or an invalid pointer */
-  if (!file || !pagedir_get_page(thread_current()->pagedir, file)) {
-    exit(-1);
-  }
+  check_valid_ptr(file);
 
   /* Checks if filename is empty string */
-  if(!strcmp(file, ""))
+  if(!strcmp(file, "")) {
     return false;
-
+  }
 
   lock_acquire(&filesys_lock);
   bool success = filesys_create(file, initial_size);
@@ -122,13 +118,13 @@ bool create (const char *file, unsigned initial_size) {
 
 bool remove (const char *file) {
   /* Checks if file is null or an invalid pointer */
-  if (!file || !pagedir_get_page(thread_current()->pagedir, file)) {
-    exit(-1);
-  }
+  check_valid_ptr(file);
+
 
   /* Checks if filename is empty string */
-  if(!strcmp(file, ""))
+  if(!strcmp(file, "")) {
     return false;
+  }
 
   lock_acquire(&filesys_lock);
   bool success = filesys_remove(file);
@@ -138,13 +134,12 @@ bool remove (const char *file) {
 
 int open (const char *file) {
   /* Checks if file is null or an invalid pointer */
-  if (!file || !pagedir_get_page(thread_current()->pagedir, file)) {
-    exit(-1);
-  }
+  check_valid_ptr(file);
 
   /* Checks if filename is empty string */
-  if(!strcmp(file, ""))
+  if(!strcmp(file, "")) {
     return -1;
+  }
 
   lock_acquire(&filesys_lock);
   struct file *f = filesys_open(file);
@@ -166,11 +161,20 @@ int filesize (int fd) {
 }
 
 int read (int fd, void *buffer, unsigned length) {
+
+  if (!buffer || !is_user_vaddr(buffer)) {
+    exit(-1);
+  }
+
   if (fd == STDIN_FILENO) {
     input_getc();
     return length;
   }
+
   struct file *file = process_get_file(fd);
+  if (!file) {
+    return -1;
+  }
   return file_read(file, buffer, length);
 }
 
@@ -197,4 +201,10 @@ void close (int fd) {
   struct file *file = process_get_file(fd);
   file_close(file);
   process_remove_fds(file);
+}
+
+void check_valid_ptr(void* ptr) {
+  if (!(ptr && pagedir_get_page(thread_current()->pagedir, ptr))) {
+    exit(-1);
+  }
 }
