@@ -75,6 +75,9 @@ void read_args(void* esp, int num, void** args) {
   for (; i < num; i++) {
     p += 4;
     args[i] = p;
+    if (!p || !is_user_vaddr(p)) {
+      exit(-1);
+    }
   }
 }
 
