@@ -121,6 +121,15 @@ bool create (const char *file, unsigned initial_size) {
 }
 
 bool remove (const char *file) {
+  /* Checks if file is null or an invalid pointer */
+  if (!file || !pagedir_get_page(thread_current()->pagedir, file)) {
+    exit(-1);
+  }
+
+  /* Checks if filename is empty string */
+  if(!strcmp(file, ""))
+    return false;
+
   lock_acquire(&filesys_lock);
   bool success = filesys_remove(file);
   lock_release(&filesys_lock);
@@ -128,6 +137,15 @@ bool remove (const char *file) {
 }
 
 int open (const char *file) {
+  /* Checks if file is null or an invalid pointer */
+  if (!file || !pagedir_get_page(thread_current()->pagedir, file)) {
+    exit(-1);
+  }
+
+  /* Checks if filename is empty string */
+  if(!strcmp(file, ""))
+    return -1;
+
   lock_acquire(&filesys_lock);
   struct file *f = filesys_open(file);
   /* If the file could not be opened, return -1 */

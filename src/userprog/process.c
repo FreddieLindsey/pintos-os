@@ -254,6 +254,15 @@ int process_generate_fd(struct file *file) {
   int fd = 2;
   struct list_elem *e;
 
+  struct fd_elem *f = malloc(sizeof(struct fd_elem));
+  f->file = file;
+
+  if(list_empty(&fd_list)) {
+    f->fd = fd;
+    list_push_back(&fd_list, &f->elem);
+    return fd;
+  }
+
   for (e = list_begin(&fd_list); e != list_end(&fd_list); e = list_next(e)) {
     struct fd_elem* f = list_entry(e, struct fd_elem, elem);
 
@@ -261,12 +270,12 @@ int process_generate_fd(struct file *file) {
     if (f->fd != fd) {
       break;
     }
+
+    fd++;
   }
 
-  struct fd_elem *f = malloc(sizeof(struct fd_elem));
   f->fd = fd;
-  f->file = file;
-  list_insert(list_next(e), &f->elem);
+  list_insert(e, &f->elem);
 
   return fd;
 }
