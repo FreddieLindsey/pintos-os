@@ -105,7 +105,7 @@ int wait (pid_t pid) {
 bool create (const char *file, unsigned initial_size) {
 
   /* Checks if file is null or an invalid pointer */
-  if (!pagedir_get_page(thread_current()->pagedir, file)) {
+  if (!file || !pagedir_get_page(thread_current()->pagedir, file)) {
     exit(-1);
   }
 
