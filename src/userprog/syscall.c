@@ -92,6 +92,7 @@ void exit (int status) {
 }
 
 pid_t exec (const char *file) {
+  check_valid_ptr(file);
   return process_execute(file);
 }
 
