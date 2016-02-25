@@ -179,11 +179,18 @@ int read (int fd, void *buffer, unsigned length) {
 }
 
 int write (int fd, const void *buffer, unsigned length) {
+
+  check_valid_ptr(buffer);
+
   if (fd == STDOUT_FILENO) {
     putbuf(buffer, length);
     return length;
   }
+
   struct file *file = process_get_file(fd);
+  if (!file) {
+    return -1;
+  }
   return file_write(file, buffer, length);
 }
 
