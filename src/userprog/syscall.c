@@ -42,15 +42,15 @@ syscall_handler (struct intr_frame *f)
     case SYS_EXIT: read_args(f->esp, 1, args);
                    exit(*(int*)args[0]); break;
     case SYS_EXEC: read_args(f->esp, 1, args);
-                   f->eax = exec((char*)args[0]); break;
+                   f->eax = exec(*(char**)args[0]); break;
     case SYS_WAIT: read_args(f->esp, 1, args);
                    f->eax = wait(*(int*)args[0]); break;
     case SYS_CREATE: read_args(f->esp, 2, args);
-                     f->eax = create((char*)args[0], *(unsigned*)args[1]); break;
+                     f->eax = create(*(char**)args[0], *(unsigned*)args[1]); break;
     case SYS_REMOVE: read_args(f->esp, 1, args);
-                     f->eax = remove((char*)args[0]); break;
+                     f->eax = remove(*(char**)args[0]); break;
     case SYS_OPEN: read_args(f->esp, 1, args);
-                     f->eax = open((char*)args[0]); break;
+                     f->eax = open(*(char**)args[0]); break;
     case SYS_FILESIZE: read_args(f->esp, 1, args);
                        f->eax = filesize(*(int*)args[0]); break;
     case SYS_READ: read_args(f->esp, 3, args);
@@ -78,6 +78,7 @@ void read_args(void* esp, int num, void** args) {
     if (!p || !is_user_vaddr(p)) {
       exit(-1);
     }
+
   }
 }
 
@@ -102,6 +103,17 @@ int wait (pid_t pid) {
 }
 
 bool create (const char *file, unsigned initial_size) {
+
+  /* Checks if file is null or an invalid pointer */
+  if (!pagedir_get_page(thread_current()->pagedir, file)) {
+    exit(-1);
+  }
+
+  /* Checks if filename is empty string */
+  if(!strcmp(file, ""))
+    return false;
+
+
   lock_acquire(&filesys_lock);
   bool success = filesys_create(file, initial_size);
   lock_release(&filesys_lock);
@@ -118,7 +130,6 @@ bool remove (const char *file) {
 int open (const char *file) {
   lock_acquire(&filesys_lock);
   struct file *f = filesys_open(file);
-
   /* If the file could not be opened, return -1 */
   if (f == NULL) {
     lock_release(&filesys_lock);
