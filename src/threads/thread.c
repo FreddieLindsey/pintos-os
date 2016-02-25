@@ -242,8 +242,8 @@ bool thread_is_child(tid_t tid) {
   for (e = list_begin (&t->children); e != list_end (&t->children);
        e = list_next (e))
     {
-      struct thread *t = list_entry (e, struct thread, elem);
-      if(t->tid == tid)
+      struct tid_elem *tid_elem = list_entry (e, struct tid_elem, elem);
+      if(tid_elem->tid == tid)
         return true;
     }
 

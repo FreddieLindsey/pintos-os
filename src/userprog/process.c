@@ -183,7 +183,7 @@ process_wait (tid_t child_tid)
   struct thread *t = thread_find_thread(child_tid);
 
   /* Check if TID is invalid and it is not child of calling process */
-  if (t == NULL) //||) !thread_is_child(t->tid))
+  if ((t == NULL) || !thread_is_child(t->tid))
     return -1;
 
   /* Check if process_wait() has already been called */
