@@ -20,7 +20,6 @@
 #include "threads/vaddr.h"
 
 static thread_func start_process NO_RETURN;
-struct list fd_list;
 static bool load (const char *cmdline, void (**eip) (void), void **esp);
 
 struct fd_elem {
@@ -79,8 +78,7 @@ start_process (void *file_name_)
   bool success;
 
   /* Initialize the list of file descriptors */
-  list_init(&fd_list);
-
+  list_init(&thread_current()->fd_list);
   /* Initialize interrupt frame and load executable. */
   memset (&if_, 0, sizeof if_);
   if_.gs = if_.fs = if_.es = if_.ds = if_.ss = SEL_UDSEG;
@@ -252,15 +250,16 @@ int process_generate_fd(struct file *file) {
   struct list_elem *e;
 
   struct fd_elem *f = malloc(sizeof(struct fd_elem));
+  struct list* fd_list = &thread_current()->fd_list;
   f->file = file;
 
-  if(list_empty(&fd_list)) {
+  if(list_empty(fd_list)) {
     f->fd = fd;
-    list_push_back(&fd_list, &f->elem);
+    list_push_back(fd_list, &f->elem);
     return fd;
   }
 
-  for (e = list_begin(&fd_list); e != list_end(&fd_list); e = list_next(e)) {
+  for (e = list_begin(fd_list); e != list_end(fd_list); e = list_next(e)) {
     struct fd_elem* f = list_entry(e, struct fd_elem, elem);
 
     /* Found a gap in the list so break out of for loop */
@@ -279,9 +278,14 @@ int process_generate_fd(struct file *file) {
 
 struct file* process_get_file(int fd) {
   struct list_elem *e;
-  for (e = list_begin(&fd_list); e != list_end(&fd_list); e = list_next(e)) {
-    struct fd_elem* f = list_entry(e, struct fd_elem, elem);
+  struct list* fd_list = &thread_current()->fd_list;
 
+  if(list_empty(fd_list)) {
+    return NULL;
+  }
+
+  for (e = list_begin(fd_list); e != list_end(fd_list); e = list_next(e)) {
+    struct fd_elem* f = list_entry(e, struct fd_elem, elem);
     /* Found a gap in the list so break out of for loop */
     if (f->fd == fd) {
       return f->file;
@@ -293,14 +297,14 @@ struct file* process_get_file(int fd) {
 
 void process_remove_fds(struct file *file) {
   struct list_elem *e;
-  for (e = list_begin(&fd_list); e != list_end(&fd_list); e = list_next(e)) {
+  struct list* fd_list = &thread_current()->fd_list;
+
+  for (e = list_begin(fd_list); e != list_end(fd_list); e = list_next(e)) {
     struct fd_elem* f = list_entry(e, struct fd_elem, elem);
 
     /* Found the file in the table so remove the fd_elem */
     if (f->file == file) {
       list_remove(e);
-      struct fd_elem* fd_elem = list_entry(e, struct fd_elem, elem);
-      free(fd_elem);
     }
   }
 }
@@ -402,7 +406,6 @@ load (const char *file_name, void (**eip) (void), void **esp)
       printf ("load: %s: open failed\n", file_name);
       goto done;
     }
-
 
   /* Read and verify executable header. */
   if (file_read (file, &ehdr, sizeof ehdr) != sizeof ehdr

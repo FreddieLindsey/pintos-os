@@ -65,7 +65,7 @@ syscall_handler (struct intr_frame *f)
     case SYS_TELL: read_args(f->esp, 1, args);
                    f->eax = tell(*(int*)args[0]); break;
     case SYS_CLOSE: read_args(f->esp, 1, args);
-                     (*(int*)args[0]); break;
+                     close(*(int*)args[0]); break;
   }
 }
 
@@ -105,9 +105,12 @@ pid_t exec (const char *file_name) {
   strlcpy(file_name_copy, file_name, str_len);
 
   arg = strtok_r(file_name_copy, " ", &save_ptr);
-  return (!filesys_open (arg)) ?
-    -1 :
-    process_execute(file_name);
+  struct file* file = filesys_open (arg);
+  if (!file) {
+    return -1;
+  }
+
+  return process_execute(file_name);
 }
 
 int wait (pid_t pid) {
@@ -163,10 +166,8 @@ int open (const char *file) {
     lock_release(&filesys_lock);
     return -1;
   }
-
   /* Adds file to file descriptor table */
   int fd = process_generate_fd(f);
-
   lock_release(&filesys_lock);
   return fd;
 }

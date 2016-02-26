@@ -643,8 +643,11 @@ init_thread (struct thread *t, const char *name, int priority)
   list_init(&t->priorities);
   /* This is the initialisation for the list of donations given */
   list_init(&t->donations);
-  /* THis is the initialisation for the list of child threads */
-  list_init(&t->children);
+
+  #ifdef USERPROG
+      /* THis is the initialisation for the list of child threads */
+      list_init(&t->children);
+  #endif
 
   sema_init(&t->sema, 0);
 
