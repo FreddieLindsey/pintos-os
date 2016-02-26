@@ -67,6 +67,7 @@ syscall_handler (struct intr_frame *f)
     case SYS_CLOSE: read_args(f->esp, 1, args);
                      close(*(int*)args[0]); break;
   }
+
 }
 
 /* Reads num arguments from esp and stores them in args */
@@ -103,14 +104,14 @@ pid_t exec (const char *file_name) {
   int str_len = strlen(file_name) + 1;
   char file_name_copy[str_len];
   strlcpy(file_name_copy, file_name, str_len);
-
   arg = strtok_r(file_name_copy, " ", &save_ptr);
   struct file* file = filesys_open (arg);
   if (!file) {
     return -1;
   }
 
-  return process_execute(file_name);
+  pid_t pid = process_execute(file_name);
+  return pid;
 }
 
 int wait (pid_t pid) {
@@ -178,7 +179,6 @@ int filesize (int fd) {
 
 int read (int fd, void *buffer, unsigned length) {
 
-
   if (!buffer || !is_user_vaddr(buffer)) {
     exit(-1);
   }
@@ -197,7 +197,6 @@ int read (int fd, void *buffer, unsigned length) {
 }
 
 int write (int fd, const void *buffer, unsigned length) {
-
   check_valid_ptr(buffer);
 
   if (fd == STDOUT_FILENO) {
