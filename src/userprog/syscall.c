@@ -32,7 +32,6 @@ syscall_handler (struct intr_frame *f)
   check_valid_ptr(f->esp);
   /* Read the number of the system call */
   int syscall_num = *(int*)(f->esp);
-
   //printf("Sup %d\n", syscall_num);
   /* array which holds the arguments of the system call */
   /* also passes to the appropriate function */
@@ -101,7 +100,7 @@ pid_t exec (const char *file_name) {
   check_valid_ptr(file_name);
 
   char *arg, *save_ptr;
-  int str_len = strlen(file_name);
+  int str_len = strlen(file_name) + 1;
   char file_name_copy[str_len];
   strlcpy(file_name_copy, file_name, str_len);
 
