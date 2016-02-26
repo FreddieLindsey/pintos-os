@@ -13,8 +13,10 @@
 
 static struct lock filesys_lock;
 
+
 static void syscall_handler (struct intr_frame *);
 void read_args(void* esp, int num, void** args);
+void check_valid_ptr(void* ptr);
 
 void
 syscall_init (void)
@@ -30,6 +32,8 @@ syscall_handler (struct intr_frame *f)
   check_valid_ptr(f->esp);
   /* Read the number of the system call */
   int syscall_num = *(int*)(f->esp);
+
+  //printf("Sup %d\n", syscall_num);
   /* array which holds the arguments of the system call */
   /* also passes to the appropriate function */
   void* args[MAX_ARGS];
@@ -40,7 +44,7 @@ syscall_handler (struct intr_frame *f)
     case SYS_EXIT: read_args(f->esp, 1, args);
                    exit(*(int*)args[0]); break;
     case SYS_EXEC: read_args(f->esp, 1, args);
-                   f->eax = exec(*(char**)args[0]); break;
+                   f->eax = exec(*(char**)args[0]); thread_yield(); break;
     case SYS_WAIT: read_args(f->esp, 1, args);
                    f->eax = wait(*(int*)args[0]); break;
     case SYS_CREATE: read_args(f->esp, 2, args);
@@ -72,10 +76,11 @@ void read_args(void* esp, int num, void** args) {
   void* p = esp;
   for (; i < num; i++) {
     p += 4;
-    args[i] = p;
     if (!p || !is_user_vaddr(p)) {
       exit(-1);
     }
+    args[i] = p;
+
 
   }
 }
@@ -89,11 +94,21 @@ void exit (int status) {
   printf ("%s: exit(%d)\n", thread_current()->proc_name, status);
   process_exit();
   thread_yield();
+  thread_exit();
 }
 
-pid_t exec (const char *file) {
-  check_valid_ptr(file);
-  return process_execute(file);
+pid_t exec (const char *file_name) {
+  check_valid_ptr(file_name);
+
+  char *arg, *save_ptr;
+  int str_len = strlen(file_name);
+  char file_name_copy[str_len];
+  strlcpy(file_name_copy, file_name, str_len);
+
+  arg = strtok_r(file_name_copy, " ", &save_ptr);
+  return (!filesys_open (arg)) ?
+    -1 :
+    process_execute(file_name);
 }
 
 int wait (pid_t pid) {
@@ -163,6 +178,7 @@ int filesize (int fd) {
 
 int read (int fd, void *buffer, unsigned length) {
 
+
   if (!buffer || !is_user_vaddr(buffer)) {
     exit(-1);
   }
@@ -172,9 +188,10 @@ int read (int fd, void *buffer, unsigned length) {
     return length;
   }
 
+
   struct file *file = process_get_file(fd);
   if (!file) {
-    return -1;
+    exit(-1);
   }
   return file_read(file, buffer, length);
 }

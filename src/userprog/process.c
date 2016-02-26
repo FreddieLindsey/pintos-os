@@ -87,7 +87,6 @@ start_process (void *file_name_)
   if_.cs = SEL_UCSEG;
   if_.eflags = FLAG_IF | FLAG_MBS;
   success = load (file_name[0], &if_.eip, &if_.esp);
-
   /* If load failed, quit. */
   if (!success) {
     palloc_free_page (file_name[0]);
@@ -196,9 +195,7 @@ process_wait (tid_t child_tid)
   while(!(t == NULL || t->pagedir == NULL)) {
     t = thread_find_thread(child_tid);
     thread_yield();
-
   }
-
   /* If terminated by kernel */
   if (t == NULL)
     return -1;
@@ -402,7 +399,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
   file = filesys_open (file_name);
   if (file == NULL)
     {
-      printf ("Open failed:\t%s\n", file_name);
+      printf ("load: %s: open failed\n", file_name);
       goto done;
     }
 
