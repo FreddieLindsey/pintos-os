@@ -242,8 +242,8 @@ bool thread_is_child(tid_t tid) {
   for (e = list_begin (&t->children); e != list_end (&t->children);
        e = list_next (e))
     {
-      struct thread *t = list_entry (e, struct thread, elem);
-      if(t->tid == tid)
+      struct tid_elem *tid_elem = list_entry (e, struct tid_elem, elem);
+      if(tid_elem->tid == tid)
         return true;
     }
 
@@ -351,6 +351,7 @@ void
 thread_exit (void)
 {
   ASSERT (!intr_context ());
+
 
 #ifdef USERPROG
   process_exit ();
@@ -642,8 +643,11 @@ init_thread (struct thread *t, const char *name, int priority)
   list_init(&t->priorities);
   /* This is the initialisation for the list of donations given */
   list_init(&t->donations);
-  /* THis is the initialisation for the list of child threads */
-  list_init(&t->children);
+
+  #ifdef USERPROG
+      /* THis is the initialisation for the list of child threads */
+      list_init(&t->children);
+  #endif
 
   sema_init(&t->sema, 0);
 

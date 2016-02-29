@@ -20,7 +20,6 @@
 #include "threads/vaddr.h"
 
 static thread_func start_process NO_RETURN;
-struct list fd_list;
 static bool load (const char *cmdline, void (**eip) (void), void **esp);
 
 struct fd_elem {
@@ -59,10 +58,11 @@ process_execute (const char *file_name)
   args[j] = NULL;
 
   /* Create a new thread to execute FILE_NAME. */
-  tid = thread_create (file_name, PRI_DEFAULT, start_process, args[0]);
-  if (tid == TID_ERROR)
+  tid = thread_create (file_name, PRI_DEFAULT, start_process, args);
+  if (tid == TID_ERROR) {
     palloc_free_page (fn_copy);
     palloc_free_page (args);
+  }
     // TODO: Potentially need to free args elsewhere also
   return tid;
 }
@@ -73,23 +73,23 @@ static void
 start_process (void *file_name_)
 {
   char **file_name = file_name_;
+  thread_current()->proc_name = file_name[0];
   struct intr_frame if_;
   bool success;
 
   /* Initialize the list of file descriptors */
-  list_init(&fd_list);
-
+  list_init(&thread_current()->fd_list);
   /* Initialize interrupt frame and load executable. */
   memset (&if_, 0, sizeof if_);
   if_.gs = if_.fs = if_.es = if_.ds = if_.ss = SEL_UDSEG;
   if_.cs = SEL_UCSEG;
   if_.eflags = FLAG_IF | FLAG_MBS;
   success = load (file_name[0], &if_.eip, &if_.esp);
-
   /* If load failed, quit. */
-  palloc_free_page (file_name);
-  if (!success)
+  if (!success) {
+    palloc_free_page (file_name[0]);
     thread_exit ();
+  }
 
   /* Determine argc. */
   int argc = 0;
@@ -98,13 +98,13 @@ start_process (void *file_name_)
   }
 
   /* Set up temporary array to track pointers to args on stack. */
-  void *argv[argc];
+  char *argv[argc];
 
   /* Push arguments onto stack, right to left. */
-  int i; 
+  int i;
   for (i = argc - 1; i >= 0; --i) {
     /* Decrement the stack pointer by the size of the char[] pushed. */
-    int size_str = sizeof(char) * strlen(file_name[i]);
+    int size_str = sizeof(char) * (strlen(file_name[i]) + 1);
     if_.esp -= size_str;
     /* Copy each arg string onto the stack. */
     memcpy(if_.esp, file_name[i], size_str);
@@ -118,20 +118,21 @@ start_process (void *file_name_)
     if_.esp -= esp_align;
   }
 
+  char* sentinel = "null";
   /* Decrement the stack pointer by the size of a pointer. */
-  if_.esp -= sizeof(argv[0]);
+  if_.esp -= sizeof(sentinel);
   /* Push null pointer sentinel onto stack as the end of argv. */
-  memcpy(if_.esp, 0, sizeof(argv[0]));
+  *(char*)if_.esp = '\0';
 
   for (i = argc - 1; i >= 0; --i) {
     /* Decrement the stack pointer by the size of a pointer. */
     if_.esp -= sizeof(argv[i]);
     /* Push the stack pointers comprising argv. */
-    memcpy(if_.esp, argv[i], sizeof(argv[i]));
+    memcpy(if_.esp, &argv[i], sizeof(argv[i]));
   }
 
   /* Decrement the stack pointer by the size of a pointer. */
-  void *esp_save = if_.esp;
+  char **esp_save = if_.esp;
   if_.esp -= sizeof(argv[0]);
   /* Push pointer to the base of argv on the stack. */
   memcpy(if_.esp, &esp_save, sizeof(argv[0]));
@@ -144,7 +145,9 @@ start_process (void *file_name_)
   /* Decrement the stack pointer by the size of a pointer. */
   if_.esp -= sizeof(argv[0]);
   /* Push return address (NULL). */
-  memcpy(if_.esp, 0, sizeof(int));
+  memcpy(if_.esp, sentinel, sizeof(int));
+
+  // hex_dump(if_.esp, if_.esp, (offset - (int) if_.esp), true);
 
   /* Start the user process by simulating a return from an
      interrupt, implemented by intr_exit (in
@@ -152,6 +155,7 @@ start_process (void *file_name_)
      arguments on the stack in the form of a `struct intr_frame',
      we just point the stack pointer (%esp) to our stack frame
      and jump to it. */
+
   asm volatile ("movl %0, %%esp; jmp intr_exit" : : "g" (&if_) : "memory");
   NOT_REACHED ();
 }
@@ -165,11 +169,36 @@ start_process (void *file_name_)
 
    This function will be implemented in problem 2-2.  For now, it
    does nothing. */
+
+// NB: if thread is destroyed, then terminated by kernel, otherwise, terminated
+// if pagedir == NULL
 int
 process_wait (tid_t child_tid)
 {
-  while(true) {} // TODO: Remove with proper implementation
-  return -1;
+
+  /* Try to find thread */
+  struct thread *t = thread_find_thread(child_tid);
+
+  /* Check if TID is invalid and it is not child of calling process */
+  if ((t == NULL) || !thread_is_child(t->tid))
+    return -1;
+
+  /* Check if process_wait() has already been called */
+  if(t->waited_upon)
+    return -1;
+
+  t->waited_upon = 1;
+  /* Wait until termination either by kernel or process_exit */
+  while (!t->process_init) { thread_yield(); } // Hold until process_init
+  while(!(t == NULL || t->pagedir == NULL)) {
+    t = thread_find_thread(child_tid);
+    thread_yield();
+  }
+  /* If terminated by kernel */
+  if (t == NULL)
+    return -1;
+  else
+    return t->exit_status;
 }
 
 /* Free the current process's resources. */
@@ -195,6 +224,7 @@ process_exit (void)
       pagedir_activate (NULL);
       pagedir_destroy (pd);
     }
+
 }
 
 /* Sets up the CPU for running user code in the current
@@ -219,28 +249,43 @@ int process_generate_fd(struct file *file) {
   int fd = 2;
   struct list_elem *e;
 
-  for (e = list_begin(&fd_list); e != list_end(&fd_list); e = list_next(e)) {
+  struct fd_elem *f = malloc(sizeof(struct fd_elem));
+  struct list* fd_list = &thread_current()->fd_list;
+  f->file = file;
+
+  if(list_empty(fd_list)) {
+    f->fd = fd;
+    list_push_back(fd_list, &f->elem);
+    return fd;
+  }
+
+  for (e = list_begin(fd_list); e != list_end(fd_list); e = list_next(e)) {
     struct fd_elem* f = list_entry(e, struct fd_elem, elem);
 
     /* Found a gap in the list so break out of for loop */
     if (f->fd != fd) {
       break;
     }
+
+    fd++;
   }
 
-  struct fd_elem *f = malloc(sizeof(struct fd_elem));
   f->fd = fd;
-  f->file = file;
-  list_insert(list_next(e), &f->elem);
+  list_insert(e, &f->elem);
 
   return fd;
 }
 
 struct file* process_get_file(int fd) {
   struct list_elem *e;
-  for (e = list_begin(&fd_list); e != list_end(&fd_list); e = list_next(e)) {
-    struct fd_elem* f = list_entry(e, struct fd_elem, elem);
+  struct list* fd_list = &thread_current()->fd_list;
 
+  if(list_empty(fd_list)) {
+    return NULL;
+  }
+
+  for (e = list_begin(fd_list); e != list_end(fd_list); e = list_next(e)) {
+    struct fd_elem* f = list_entry(e, struct fd_elem, elem);
     /* Found a gap in the list so break out of for loop */
     if (f->fd == fd) {
       return f->file;
@@ -252,14 +297,14 @@ struct file* process_get_file(int fd) {
 
 void process_remove_fds(struct file *file) {
   struct list_elem *e;
-  for (e = list_begin(&fd_list); e != list_end(&fd_list); e = list_next(e)) {
+  struct list* fd_list = &thread_current()->fd_list;
+
+  for (e = list_begin(fd_list); e != list_end(fd_list); e = list_next(e)) {
     struct fd_elem* f = list_entry(e, struct fd_elem, elem);
 
     /* Found the file in the table so remove the fd_elem */
     if (f->file == file) {
       list_remove(e);
-      struct fd_elem* fd_elem = list_entry(e, struct fd_elem, elem);
-      free(fd_elem);
     }
   }
 }
@@ -349,6 +394,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
 
   /* Allocate and activate page directory. */
   t->pagedir = pagedir_create ();
+  t->process_init = 1; // Signal that the process has started
   if (t->pagedir == NULL)
     goto done;
   process_activate ();
@@ -423,13 +469,15 @@ load (const char *file_name, void (**eip) (void), void **esp)
                   read_bytes = 0;
                   zero_bytes = ROUND_UP (page_offset + phdr.p_memsz, PGSIZE);
                 }
+
+              // TODO: FAILS HERE!!!
+
               if (!load_segment (file, file_page, (void *) mem_page,
                                  read_bytes, zero_bytes, writable))
                 goto done;
             }
           else
             goto done;
-          break;
         }
     }
 
@@ -569,7 +617,7 @@ setup_stack (void **esp)
     {
       success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true);
       if (success)
-        *esp = PHYS_BASE;
+        *esp = PHYS_BASE - 12;
       else
         palloc_free_page (kpage);
     }
