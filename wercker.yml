@@ -25,6 +25,19 @@ build:
       code: |
         make -C src/userprog -j 16
     - script:
+      name: Testing src/devices
+      code: |
+        make -C src/devices -j 16 check
+    - script:
+      name: Testing src/threads
+      code: |
+        make -C src/threads -j 16 check
+    - script:
+      name: Testing src/userprog
+      code: |
+        make -C src/userprog -j 16 check
+
+    - script:
       name: Testing src/threads/fixed-point
       code: |
         gcc -Wall -Werror -pedantic -std=c99 src/threads/fixed-point-tests.c -o fixed-point-tests
@@ -60,20 +73,6 @@ dev:
 
 deploy:
   steps:
-
-    - script:
-      name: Testing src/devices
-      code: |
-        make -C src/devices -j 16 check
-    - script:
-      name: Testing src/threads
-      code: |
-        make -C src/threads -j 16 check
-    - script:
-      name: Testing src/userprog
-      code: |
-        make -C src/userprog -j 16 check
-
     - add-to-known_hosts:
         hostname: gitlab.doc.ic.ac.uk
     - mktemp:
