@@ -156,6 +156,10 @@ start_process (void *file_name_)
      we just point the stack pointer (%esp) to our stack frame
      and jump to it. */
 
+  /* Deny write for executable file currently running */
+  struct file *f = filesys_open(file_name[0]);
+  thread_current()->file = f;
+  file_deny_write(f);
   asm volatile ("movl %0, %%esp; jmp intr_exit" : : "g" (&if_) : "memory");
   NOT_REACHED ();
 }
@@ -207,6 +211,9 @@ process_exit (void)
 {
   struct thread *cur = thread_current ();
   uint32_t *pd;
+
+  /* this allows write on the executable file once it stops running */
+  file_allow_write(cur->file);
 
   /* Destroy the current process's page directory and switch back
      to the kernel-only page directory. */

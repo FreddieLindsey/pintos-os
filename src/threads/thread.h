@@ -114,7 +114,8 @@ struct thread
     uint32_t *pagedir;                  /* Page directory. */
     int process_init;                   /* Process initiated */
     char* proc_name;
-    struct list fd_list; 
+    struct list fd_list;
+    struct file* file;                  /* Executable associated file */
 #endif
 
     /* Owned by thread.c. */
