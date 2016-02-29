@@ -14,7 +14,7 @@ load_dir = Dir.pwd if load_dir == '.'
 puts "Running tests from #{load_dir}\n\n"
 
 if ARGV.length < 1
-  exec("make clean && make -C #{load_dir}/src/userprog -j 16 check > output 2>&1 && atom outfile && cat outfile | grep FAIL")
+  exec("make clean > output 2>&1 && make -C #{load_dir}/src/userprog -j 16 check >> output 2>&1")
 else
   test_ = []
   ARGV.each do |arg|
