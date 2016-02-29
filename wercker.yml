@@ -7,46 +7,16 @@ build:
         export PATH="$(pwd)/src/utils:$PATH"
         echo -e "CWD:\t$(pwd)"
         echo -e "Pintos:\t$(which pintos)"
-    - script:
-      name: Check tools available
-      code: |
-        echo $PATH
-        which pintos
-    - script:
-      name: Compiling src/devices
-      code: |
-        make -C src/devices -j 16
-    - script:
-      name: Compiling src/threads
-      code: |
-        make -C src/threads -j 16
+
     - script:
       name: Compiling src/userprog
       code: |
         make -C src/userprog -j 16
     - script:
-      name: Testing src/devices
-      code: |
-        make -C src/devices -j 16 check
-    - script:
-      name: Testing src/threads
-      code: |
-        make -C src/threads -j 16 check
-    - script:
       name: Testing src/userprog
       code: |
         make -C src/userprog -j 16 check
-
-    - script:
-      name: Testing src/threads/fixed-point
-      code: |
-        gcc -Wall -Werror -pedantic -std=c99 src/threads/fixed-point-tests.c -o fixed-point-tests
-        ./fixed-point-tests
-        rm fixed-point-tests
-    - script:
-      name: Compiling design documents
-      code: |
-        make -C doc alarmclock.pdf
+        
   after-steps:
     - slack-notifier:
       url: $SLACK_URL
@@ -58,14 +28,6 @@ dev:
       code: |
         export PATH="$(pwd)/src/utils:$PATH"
         echo -e "PATH:\t$PATH"
-    - script:
-      name: Testing src/devices
-      code: |
-        make -C src/devices -j 16 check
-    - script:
-      name: Testing src/threads
-      code: |
-        make -C src/threads -j 16 check
     - script:
       name: Testing src/userprog
       code: |
