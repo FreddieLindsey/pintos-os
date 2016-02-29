@@ -48,6 +48,14 @@ else
     `cd #{load_dir}/#{test_a['dir']} && #{test_a['command']}`
     exit_code = $?.exitstatus
 
+    output_file = "#{load_dir}/#{test_a['dir']}/#{t[:name]}.output"
+    puts "\n\nOutput:\n\n"
+    system("cat #{output_file}")
+
+    errors_file = "#{load_dir}/#{test_a['dir']}/#{t[:name]}.errors"
+    puts "\n\nErrors:\n\n"
+    system("cat #{errors_file}")
+
     puts "\nExit code:\t#{exit_code}\n\n"
   end
 
