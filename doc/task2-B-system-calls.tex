@@ -74,6 +74,7 @@ managing these issues.
 
 % --------------------------------------------------------------
 
+The main strategy that we adopted for managing these issues was error handling abstraction. This was done by abstracting the error checking of pointers into a helper function (\texttt{check\_valid\_ptr()}). That way, pointers only needed to be checking by calling this method at the start of each system call method. For some of the temporarily allocated resources, we also included frees in some of the checks of \texttt{check\_valid\_ptr()} so that they were freed immediately after the error was detected. Fortunately, buffers were really the only resources that needed to be freed after an error was detected as extra resources like locks were usually part of the thread struct itself.
 % TODO: Abstract error checking into separate helper functions depending on the type of system call.
 
 % TODO: Also add freeing temporarily allocated resources to source code
@@ -92,7 +93,7 @@ success/failure status passed back to the thread that calls "exec"?
 
 % TODO: Describe use of a semaphore
 
-In our code, we implemented a semaphore that is initialised at 0 and the parent thread calls down on the semaphore before passing the reponsibility to the executing thread. When the child thread has successfully or unsuccessfully loaded the file, it then calls up on that semaphore, so that the parent thread is unblocked only after the child thread has attempted to load the executable.
+In our code, we implemented a semaphore that is initialised at 0 and the parent thread calls down on the semaphore right after calling \texttt{thread\_create()} in \texttt{process\_exit()}. The parent thread then blocks and so passes control to the executing process. When this child process has successfully or unsuccessfully loaded the file, it then calls up on that same semaphore as each child process has a reference to its parent. This means that the parent thread is unblocked only after the child thread has attempted to load the executable. This status can be passed back by having an extra field in the \texttt{tid\_elem} struct which represents a child process.
 
 % --------------------------------------------------------------
 
@@ -106,7 +107,7 @@ there any special cases?
 
 % --------------------------------------------------------------
 
-If wait is called before C exits, then the program busy waits by yielding until C is terminated either by the kernel or by an exit call.
+If wait is called before C exits, then the program busy waits by yielding until C is terminated either by the kernel or by an exit call. If P calls wait(C) before C exits, a semaphore called \texttt{wait\_sema} is used, where C has to wait until P has called \texttt{sema\_up()} in \texttt{process\_wait()} before it can properly exit. In the case of freeing resources, when P calls wait before C, this is fine as \texttt{process\_exit()} is called normally. If it is after C exits, again, the semaphore \texttt{wait\_sema} has to have been upped by P first and then immediately yields so that C frees its resources first, before P finishes waiting. At the moment if P terminates first then it never calls \texttt{sema\_up()} on its \texttt{wait\_sema} and C will never exits. If we had seen this earlier, we would have tried fixing this by only calling \texttt{sema\_down()} only if we know that P has not terminated yet.
 
 % TODO: Busy waits if wait is called before C exits.
 
