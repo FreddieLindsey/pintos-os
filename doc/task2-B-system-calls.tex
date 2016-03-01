@@ -1,0 +1,202 @@
+\section{SYSTEM CALLS}
+
+\subsection*{DATA STRUCTURES}
+
+\noindent B1: (10 marks)
+Copy here the declaration of each new or changed `struct' or
+`struct' member, global or static variable, `typedef', or
+enumeration.  Identify the purpose of each in 25 words or less.
+
+\begin{verbatim}
+struct thread
+  {
+    ...
+     struct list children;               /* List of child threads */
+    ...
+#ifdef USERPROG
+    ...
+    int process_init;                   /* Process initiated */
+    char* proc_name;
+    struct list fd_list;
+    struct file* file;                  /* Executable associated file */
+    struct semaphore exec_sema;         /* Controls sync in exec */
+    struct semaphore wait_sema;
+    struct thread* parent;               /* Parent process */
+#endif
+    ...    
+  };
+\end{verbatim}
+
+\texttt{process\_init} is a flag to tell whether the current process has been fully initialized (used by \texttt{process\_wait()})
+
+\texttt{proc\_name} is the name of the process and is used for printing exit statuses.
+
+\texttt{fd\_list} holds the currently open file descriptors of the process.
+
+\texttt{file} is the executable file that the process is using.
+
+\texttt{exec\_sema} is the semaphore that is used for synchronisation between parent and child processes in \texttt{exec()}.
+
+\texttt{wait\_sema} is the semaphore that is used for synchronisation between parent and child processes in \texttt{process\_wait()}.
+
+\texttt{parent} is a reference to the parent process which is needed for synchronisation.
+
+
+\begin{verbatim}
+struct tid_elem {
+  tid_t tid;                         /* tid of thread */
+  struct list_elem elem;
+};
+\end{verbatim}
+
+This is an element of the list children which is used in \texttt{process\_wait()} to tell whether a particular process is a child process.
+
+\begin{verbatim}
+struct fd_elem {
+  int fd;
+  struct file *file;
+  struct list_elem elem;
+};
+\end{verbatim}
+
+This is an element of the list \texttt{fd\_list} which is used in file system calls to hold all of the current file descriptors.
+
+% --------------------------------------------------------------
+
+
+% --------------------------------------------------------------
+
+\noindent B2: (5 marks)
+Describe how file descriptors are associated with open files.
+Are file descriptors unique within the entire OS or just within a
+single process?
+
+% --------------------------------------------------------------
+
+There can be multiple file descriptors for the same open file as well as multiple file descriptors for the same open file within the same process. So the file descriptors are only unique within a single process as opposed to the whole OS. This is because each process has a list of file descriptors associated with it as opposed to a global collection of file descriptors.
+
+% --------------------------------------------------------------
+
+\subsection*{ALGORITHMS}
+
+\noindent B3: (5 marks)
+Describe your code for reading and writing user data from the
+kernel.
+
+% --------------------------------------------------------------
+
+The kernel can read and write user data during system calls. The validity of a user pointer has to be checked as users can pass a null pointer, a pointer to unmapped virtual memory, or a pointer to kernel virtual address space. This is done through the functions (some of which call some of the others): is user \texttt{vaddr() }in \texttt{threads/vaddr.h}, \texttt{pagedir\_get\_page()} in \texttt{userprog/pagedir.c} and \texttt{check\_valid\_ptr()} in \texttt{userprog/syscall.c}. The system call that reads user data is \texttt{read()} and the one that writes user data is \texttt{write()}. Both check the validity of the user data pointer first. \texttt{read()} then checks whether it is reading from standard input or from a file and performs the read returning the number of bytes read. \texttt{write()} on the other hand checks whether it is writing to standard output or to a file and in either case it performs the write returning the number of bytes written.
+
+% --------------------------------------------------------------
+
+\noindent B4: (5 marks)
+Suppose a system call causes a full page (4,096 bytes) of data
+to be copied from user space into the kernel.  What is the least and the greatest possible number of inspections of the page table (e.g. calls to pagedir\_get\_page()) that might result?  What about for a system call that only copies 2 bytes of data?  Is there room for improvement in these numbers, and how much?
+
+% --------------------------------------------------------------
+
+In case of the copy being caused by \texttt{read()} the number of inspections of the page table is just one, due to the call to \texttt{check\_valid\_ptr()} (which calls \texttt{pagedir\_get\_page()}) at the beginning of \texttt{syscall\_handler()} which checks the validity of the stack pointer. In the case of \texttt{write()} the number of inspections is two, one being the same one as in \texttt{read()} and one specific of \texttt{write()} which checks the validity of the user data pointer to the buffer to be written.
+However as long as the amount of data is not bigger than a full page the number of inspections will stay the same no matter the size.
+One improvement could address the fact that currently only the pointer to the start of the data to be copied is checked for validity. It could be that at later addresses the pointer could be invalid. This could be avoided if both the start address and the end address where checked using the pointer to the start of the data and its size to find the latter. This is possible because pages of data are in contiguous addresses.
+
+% --------------------------------------------------------------
+
+\noindent B5: (8 marks)
+Briefly describe your implementation of the "wait" system call
+and how it interacts with process termination.
+
+% --------------------------------------------------------------
+
+In terms of the system call itself, it just calls process\_wait() as there is no need to map from pid to tid. In process\_wait(), first of all, the parent thread looks for the thread associated with the child tid. Then the thread pointer is checked if it does not exist (==NULL) or whether or not that the process actually is a child of the current process. This is done by looking for the tid in the list of child tids associated with the parent process. These are errors and so return -1.
+If the process is a child on the parent process, it is then checked if wait() has been called on it before by the parent, it does this by checking the flag waited\_upon. Again, this is an error so -1 is returned. Otherwise, waited\_upon is set and then the parent process waits for if the child process has been initialised by waiting until the flag process\_init has been set. After this it busy waits until either the pagedir is equal to null or the thread is equal to null. If the thread is equal to the null then the thread has been terminated by the kernel and -1 is returned. Otherwise, the process has been exited normally and the exit status is returned.
+
+% --------------------------------------------------------------
+
+\noindent B6: (5 marks)
+Any access to user program memory at a user-specified address
+can fail due to a bad pointer value.  Such accesses must cause the process to be terminated. System calls are fraught with such
+accesses, e.g. a "write" system call requires reading the system
+call number from the user stack, then each of the call's three
+arguments, then an arbitrary amount of user memory, and any of
+these can fail at any point.  This poses a design and
+error-handling problem: how do you best avoid obscuring the primary
+function of code in a morass of error-handling?  Furthermore, when
+an error is detected, how do you ensure that all temporarily
+allocated resources (locks, buffers, etc.) are freed?  In a
+paragraph, describe the strategy or strategies you adopted for
+managing these issues.
+
+% --------------------------------------------------------------
+
+The main strategy that we adopted for managing these issues was error handling abstraction. This was done by abstracting the error checking of pointers into a helper function (\texttt{check\_valid\_ptr()}). That way, pointers only needed to be checking by calling this method at the start of each system call method. For some of the temporarily allocated resources, we also included frees in some of the checks of \texttt{check\_valid\_ptr()} so that they were freed immediately after the error was detected. Fortunately, buffers were really the only resources that needed to be freed after an error was detected as extra resources like locks were usually part of the thread struct itself.
+% TODO: Abstract error checking into separate helper functions depending on the type of system call.
+
+% TODO: Also add freeing temporarily allocated resources to source code
+
+% --------------------------------------------------------------
+
+\subsection*{SYNCHRONIZATION}
+
+\noindent B7: (5 marks)
+The "exec" system call returns -1 if loading the new executable
+fails, so it cannot return before the new executable has completed
+loading.  How does your code ensure this?  How is the load
+success/failure status passed back to the thread that calls "exec"?
+
+% --------------------------------------------------------------
+
+% TODO: Describe use of a semaphore
+
+In our code, we implemented a semaphore that is initialised at 0 and the parent thread calls down on the semaphore right after calling \texttt{thread\_create()} in \texttt{process\_exit()}. The parent thread then blocks and so passes control to the executing process. When this child process has successfully or unsuccessfully loaded the file, it then calls up on that same semaphore as each child process has a reference to its parent. This means that the parent thread is unblocked only after the child thread has attempted to load the executable. This status can be passed back by having an extra field in the \texttt{tid\_elem} struct which represents a child process.
+
+% --------------------------------------------------------------
+
+\noindent B8: (5 marks)
+Consider parent process P with child process C.  How do you
+ensure proper synchronization and avoid race conditions when P
+calls wait(C) before C exits?  After C exits?  How do you ensure
+that all resources are freed in each case?  How about when P
+terminates without waiting, before C exits?  After C exits?  Are
+there any special cases?
+
+% --------------------------------------------------------------
+
+If wait is called before C exits, then the program busy waits by yielding until C is terminated either by the kernel or by an exit call. If P calls wait(C) before C exits, a semaphore called \texttt{wait\_sema} is used, where C has to wait until P has called \texttt{sema\_up()} in \texttt{process\_wait()} before it can properly exit. In the case of freeing resources, when P calls wait before C, this is fine as \texttt{process\_exit()} is called normally. If it is after C exits, again, the semaphore \texttt{wait\_sema} has to have been upped by P first and then immediately yields so that C frees its resources first, before P finishes waiting. At the moment if P terminates first then it never calls \texttt{sema\_up()} on its \texttt{wait\_sema} and C will never exits. If we had seen this earlier, we would have tried fixing this by only calling \texttt{sema\_down()} only if we know that P has not terminated yet.
+
+% TODO: Busy waits if wait is called before C exits.
+
+% --------------------------------------------------------------
+
+\subsection*{RATIONALE}
+
+\noindent B9: (5 marks)
+Why did you choose to implement access to user memory from the
+kernel in the way that you did?
+
+% --------------------------------------------------------------
+
+Before every access to user memory we make sure to at least check that the pointer isn't null, that it is below \texttt{PHYS\_BASE}, and  that it is mapped to a physical address.
+In most calls, such as \texttt{write()}, all checks are necessary because
+but read() for example doesn't require the pointer to be mapped, however we decided to use \texttt{check\_valid\_ptr()} for consistency even though this causes an unnecessary inspection of the page table.
+We also considered checking both the start address and the end address of the data to be accessed to make sure the whole segment is valid.
+In most cases where this could be useful, such as \texttt{read()} and \texttt{write()} this check can be done using the length of the data segment and the pointer to the start of the user data to find the end address. However in cases such as \texttt{exec()} this wasn't so easily doable and our implementation allowed us to pass most of the tests anyway, keeping the code simpler to read at the same time.
+
+% --------------------------------------------------------------
+
+\noindent B10: (5 marks)
+What advantages or disadvantages can you see to your design
+for file descriptors?
+
+% --------------------------------------------------------------
+
+Since each process has its own set of file descriptors, our design is advantageous as each process will only have access to its own file descriptors as is specified in Task 2 specification. Look ups for files are also more efficient than if there was a global list of file descriptors for the OS as the process only has to look up its own file descriptors as opposed to all of them currently present. The way that the file descriptors are generated is by looking for gaps in the file descriptor list of the process and then inserting a new fd element into the list. This has the advantage of being fairly easy to program (increment until the fd does not match one in the list) and has a fairly low complexity of O(n). However, a problem with this approach is that the list of fds themselves need to be sorted before generating a new fd according to the algorithm.
+
+% --------------------------------------------------------------
+
+\noindent B11: (2 marks)
+The default tid\_t to pid\_t mapping is the identity mapping.
+Did you change this? Why?
+
+% --------------------------------------------------------------
+
+We decided not to change this mapping as we found that there was no need to as each process can only have one thread and the pid is determined by the tid of the thread associated with it. It also made it easier in certain functions for casting and in debugging as we always knew that the thread id would be the same as the process id.

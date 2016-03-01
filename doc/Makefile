@@ -29,6 +29,9 @@ task0_sheet.pdf : task0_sheet.texi task0_questions.texi
 alarmclock.pdf : alarmclock.tex
 	pdflatex alarmclock
 
+task2_design_doc.pdf : task2_design_doc.tex task2-0-preliminaries.tex task2-A-argument-passing.tex task2-B-system-calls.tex
+	pdflatex task2_design_doc
+
 %.texi: %
 	sed < $< > $@ 's/\([{}@]\)/\@\1/g;'
 
@@ -38,6 +41,7 @@ clean:
 	rm -rf WWW
 	rm -f sample.tmpl.texi
 	rm -f alarmclock.pdf
+	rm -f task2_design_doc.pdf
 
 dist: pintos-ic.html pintos-ic.pdf
 	rm -rf WWW

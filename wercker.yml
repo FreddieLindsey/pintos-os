@@ -16,7 +16,11 @@ build:
       name: Testing src/userprog
       code: |
         make -C src/userprog -j 16 check
-        
+    - script:
+      name: Compiling design documents
+      code: |
+        make -C doc alarmclock.pdf
+        make -C doc task2_design_doc.pdf
   after-steps:
     - slack-notifier:
       url: $SLACK_URL
