@@ -56,10 +56,14 @@ syscall_handler (struct intr_frame *f)
     case SYS_FILESIZE: read_args(f->esp, 1, args);
                        f->eax = filesize(*(int*)args[0]); break;
     case SYS_READ: read_args(f->esp, 3, args);
+                   lock_acquire(&filesys_lock);
                    f->eax = read(*(int*)args[0], *(void**)args[1], *(unsigned*)args[2]);
+                   lock_release(&filesys_lock);
                    break;
     case SYS_WRITE: read_args(f->esp, 3, args);
+                    lock_acquire(&filesys_lock);
                     f->eax = write(*(int*)args[0], *(void**)args[1], *(unsigned*)args[2]);
+                    lock_release(&filesys_lock);
                     break;
     case SYS_SEEK: read_args(f->esp, 2, args);
                    seek(*(int*)args[0], *(unsigned*)args[1]); break;
@@ -68,6 +72,7 @@ syscall_handler (struct intr_frame *f)
     case SYS_CLOSE: read_args(f->esp, 1, args);
                      close(*(int*)args[0]); break;
   }
+
 
 }
 
@@ -89,7 +94,7 @@ void halt (void) {
 }
 
 void exit (int status) {
-  /* Tries to exit, but needs to wait for parent */
+  /* Tries to exit, but needs to wait for parent to call wait*/
   sema_down(&thread_current()->parent->wait_sema);
   thread_current()->exit_status = status;
   printf ("%s: exit(%d)\n", thread_current()->proc_name, status);
@@ -144,10 +149,10 @@ bool remove (const char *file) {
   if(!strcmp(file, "")) {
     return false;
   }
-
   lock_acquire(&filesys_lock);
   bool success = filesys_remove(file);
   lock_release(&filesys_lock);
+
   return success;
 }
 
@@ -162,14 +167,14 @@ int open (const char *file) {
 
   lock_acquire(&filesys_lock);
   struct file *f = filesys_open(file);
+  lock_release(&filesys_lock);
+
   /* If the file could not be opened, return -1 */
   if (f == NULL) {
-    lock_release(&filesys_lock);
     return -1;
   }
   /* Adds file to file descriptor table */
   int fd = process_generate_fd(f);
-  lock_release(&filesys_lock);
   return fd;
 }
 
@@ -188,12 +193,11 @@ int read (int fd, void *buffer, unsigned length) {
 
   struct file *file = process_get_file(fd);
   if (!file) {
+    lock_release(&filesys_lock);
     exit(-1);
   }
 
-  lock_acquire(&filesys_lock);
   int bytes_read = file_read(file, buffer, length);
-  lock_release(&filesys_lock);
   return bytes_read;
 
 }
@@ -210,9 +214,7 @@ int write (int fd, const void *buffer, unsigned length) {
   if (!file) {
     return -1;
   }
-  lock_acquire(&filesys_lock);
   int bytes_written = file_write(file, buffer, length);
-  lock_release(&filesys_lock);
   return bytes_written;
 }
 
