@@ -20,7 +20,7 @@ How do you avoid overflowing the stack page?
 
 % --------------------------------------------------------------
 
-We take the full string argument passed in and tokenise it using the pintos implementation of \texttt{strtok\_r()} delimited by whitespace. This gives an array of strings, which is stored in an allocated page of memory. The elements of this array are the order in which they are in the initial string, and are pushed onto the stack in reverse order, saving the stack pointer in argv each push. After pushing all of the strings onto the stack, and word aligning the stack pointer for efficient accessing, a null pointer and the pointers in argv are also pushed. Argv elements are pushed in reverse order as well, corresponding to the order of the pushed argument strings. This ensures argv is in the correct order. Finally the pointer to the start of argv is pushed and a null return address.
+We take the full string argument passed in and tokenise it using the pintos implementation of \texttt{strtok\_r()} delimited by whitespace. This gives an array of strings, which is stored in an allocated page of memory. The elements of this array are the order in which they are in the initial string, and are pushed onto the stack in reverse order, saving the stack pointer in argv each push. After pushing all of the strings onto the stack, and word aligning the stack pointer for efficient accessing, a null pointer and the pointers in argv are also pushed. \texttt{argv} elements are pushed in reverse order as well, corresponding to the order of the pushed argument strings. This ensures argv is in the correct order. Finally the pointer to the start of argv is pushed and a null return address.
 
 % TODO: stack overflowing page.
 
@@ -29,7 +29,7 @@ We take the full string argument passed in and tokenise it using the pintos impl
 \subsection*{RATIONALE}
 
 \noindent A3: (5 marks)
-Why does Pintos implement strtok\_r() but not strtok()?
+Why does Pintos implement \texttt{strtok\_r()} but not \texttt{strtok()}?
 
 % --------------------------------------------------------------
 
