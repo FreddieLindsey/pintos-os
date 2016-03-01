@@ -114,7 +114,11 @@ struct thread
     uint32_t *pagedir;                  /* Page directory. */
     int process_init;                   /* Process initiated */
     char* proc_name;
-    struct list fd_list; 
+    struct list fd_list;
+    struct file* file;                  /* Executable associated file */
+    struct semaphore exec_sema;         /* Controls sync in exec */
+    struct semaphore wait_sema;
+    struct thread* parent;               /* Parent process */
 #endif
 
     /* Owned by thread.c. */
@@ -132,6 +136,12 @@ struct priority_elem {
 
 struct tid_elem {
   tid_t tid;                         /* tid of thread */
+  struct list_elem elem;
+};
+
+struct fd_elem {
+  int fd;
+  struct file *file;
   struct list_elem elem;
 };
 

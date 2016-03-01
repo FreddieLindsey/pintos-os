@@ -7,29 +7,16 @@ build:
         export PATH="$(pwd)/src/utils:$PATH"
         echo -e "CWD:\t$(pwd)"
         echo -e "Pintos:\t$(which pintos)"
+
     - script:
-      name: Check tools available
+      name: Compiling src/userprog
       code: |
-        echo $PATH
-        which pintos
+        make -C src/userprog -j 16
     - script:
-      name: Compiling src/devices
+      name: Testing src/userprog
       code: |
-        make -C src/devices
-    - script:
-      name: Compiling src/threads
-      code: |
-        make -C src/threads
-    - script:
-      name: Testing src/threads/fixed-point
-      code: |
-        gcc -Wall -Werror -pedantic -std=c99 src/threads/fixed-point-tests.c -o fixed-point-tests
-        ./fixed-point-tests
-        rm fixed-point-tests
-    - script:
-      name: Compiling design documents
-      code: |
-        make -C doc alarmclock.pdf
+        make -C src/userprog -j 16 check
+        
   after-steps:
     - slack-notifier:
       url: $SLACK_URL
@@ -42,26 +29,12 @@ dev:
         export PATH="$(pwd)/src/utils:$PATH"
         echo -e "PATH:\t$PATH"
     - script:
-      name: Testing src/devices
+      name: Testing src/userprog
       code: |
-        make -C src/devices check
-    - script:
-      name: Testing src/threads
-      code: |
-        make -C src/threads check
+        make -C src/userprog -j 16 check
 
 deploy:
   steps:
-
-    - script:
-      name: Testing src/devices
-      code: |
-        make -C src/devices check
-    - script:
-      name: Testing src/threads
-      code: |
-        make -C src/threads check
-
     - add-to-known_hosts:
         hostname: gitlab.doc.ic.ac.uk
     - mktemp:

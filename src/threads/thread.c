@@ -86,6 +86,7 @@ static void *alloc_frame (struct thread *, size_t size);
 static void schedule (void);
 void thread_schedule_tail (struct thread *prev);
 void free_priority_list(struct list *l);
+void free_fd_list(struct list *l) ;
 static tid_t allocate_tid (void);
 
 /* Initializes the threading system by transforming the code
@@ -200,6 +201,10 @@ thread_create (const char *name, int priority,
 
   /* Initialize thread. */
   init_thread (t, name, priority);
+  /* Set the parent of child process as current thread */
+  #ifdef USERPROG
+  t->parent = thread_current();
+  #endif
   tid = t->tid = allocate_tid ();
 
   struct tid_elem* tid_elem = malloc(sizeof(struct tid_elem));
@@ -246,8 +251,6 @@ bool thread_is_child(tid_t tid) {
       if(tid_elem->tid == tid)
         return true;
     }
-
-  // FIXME: Potential false negative
 
   return false;
 
@@ -351,7 +354,6 @@ void
 thread_exit (void)
 {
   ASSERT (!intr_context ());
-
 
 #ifdef USERPROG
   process_exit ();
@@ -645,8 +647,12 @@ init_thread (struct thread *t, const char *name, int priority)
   list_init(&t->donations);
 
   #ifdef USERPROG
-      /* THis is the initialisation for the list of child threads */
+      /* This is the initialisation for the list of child threads */
       list_init(&t->children);
+      /* Initialise semaphore for exec */
+      sema_init(&t->exec_sema, 0);
+      /* Initialise semaphore for wait */
+      sema_init(&t->wait_sema, 0);
   #endif
 
   sema_init(&t->sema, 0);
@@ -771,6 +777,7 @@ thread_schedule_tail (struct thread *prev)
       free_priority_list(&prev->priorities);
       free_priority_list(&prev->donations);
       free_children_list(&prev->children);
+      free_fd_list(&prev->fd_list);
       palloc_free_page (prev);
     }
 }
@@ -788,8 +795,17 @@ void free_priority_list(struct list *l) {
 void free_children_list(struct list *l) {
   while (!list_empty(l)) {
     struct list_elem *e = list_pop_front(l);
-    struct priority_elem *p =  list_entry(e, struct tid_elem, elem);
-    free(p);
+    struct tid_elem *t =  list_entry(e, struct tid_elem, elem);
+    free(t);
+  }
+}
+
+/* Frees the elements in a list of fd_elem */
+void free_fd_list(struct list *l) {
+  while (!list_empty(l)) {
+    struct list_elem *e = list_pop_front(l);
+    struct fd_elem *f =  list_entry(e, struct fd_elem, elem);
+    free(f);
   }
 }
 

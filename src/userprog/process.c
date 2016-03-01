@@ -22,11 +22,7 @@
 static thread_func start_process NO_RETURN;
 static bool load (const char *cmdline, void (**eip) (void), void **esp);
 
-struct fd_elem {
-  int fd;
-  struct file *file;
-  struct list_elem elem;
-};
+
 
 /* Starts a new thread running a user program loaded from
    FILENAME.  The new thread may be scheduled (and may even exit)
@@ -59,6 +55,8 @@ process_execute (const char *file_name)
 
   /* Create a new thread to execute FILE_NAME. */
   tid = thread_create (file_name, PRI_DEFAULT, start_process, args);
+  sema_down(&thread_current()->sema);
+
   if (tid == TID_ERROR) {
     palloc_free_page (fn_copy);
     palloc_free_page (args);
@@ -85,11 +83,20 @@ start_process (void *file_name_)
   if_.cs = SEL_UCSEG;
   if_.eflags = FLAG_IF | FLAG_MBS;
   success = load (file_name[0], &if_.eip, &if_.esp);
+
+  /* Deny write for executable file currently running */
+  struct file *f = filesys_open(file_name[0]);
+  thread_current()->file = f;
+  file_deny_write(f);
+
+  /* Needs to inform the parent that it has loaded */
+  sema_up(&thread_current()->parent->exec_sema);
   /* If load failed, quit. */
   if (!success) {
     palloc_free_page (file_name[0]);
     thread_exit ();
   }
+
 
   /* Determine argc. */
   int argc = 0;
@@ -156,6 +163,7 @@ start_process (void *file_name_)
      we just point the stack pointer (%esp) to our stack frame
      and jump to it. */
 
+
   asm volatile ("movl %0, %%esp; jmp intr_exit" : : "g" (&if_) : "memory");
   NOT_REACHED ();
 }
@@ -179,6 +187,7 @@ process_wait (tid_t child_tid)
   /* Try to find thread */
   struct thread *t = thread_find_thread(child_tid);
 
+
   /* Check if TID is invalid and it is not child of calling process */
   if ((t == NULL) || !thread_is_child(t->tid))
     return -1;
@@ -189,6 +198,7 @@ process_wait (tid_t child_tid)
 
   t->waited_upon = 1;
   /* Wait until termination either by kernel or process_exit */
+  sema_up(&thread_current()->wait_sema);
   while (!t->process_init) { thread_yield(); } // Hold until process_init
   while(!(t == NULL || t->pagedir == NULL)) {
     t = thread_find_thread(child_tid);
@@ -207,6 +217,9 @@ process_exit (void)
 {
   struct thread *cur = thread_current ();
   uint32_t *pd;
+
+  /* this allows write on the executable file once it stops running */
+  file_allow_write(cur->file);
 
   /* Destroy the current process's page directory and switch back
      to the kernel-only page directory. */
@@ -295,16 +308,17 @@ struct file* process_get_file(int fd) {
   return NULL;
 }
 
-void process_remove_fds(struct file *file) {
+void process_remove_fd(int fd) {
   struct list_elem *e;
   struct list* fd_list = &thread_current()->fd_list;
 
   for (e = list_begin(fd_list); e != list_end(fd_list); e = list_next(e)) {
     struct fd_elem* f = list_entry(e, struct fd_elem, elem);
 
-    /* Found the file in the table so remove the fd_elem */
-    if (f->file == file) {
+    /* Found the fd in the table so remove the fd_elem */
+    if (f->fd == fd) {
       list_remove(e);
+      break;
     }
   }
 }

@@ -8,6 +8,7 @@
 #include "filesys/file.h"
 #include "userprog/pagedir.h"
 #include "threads/vaddr.h"
+#include "threads/malloc.h"
 
 #define MAX_ARGS 3
 
@@ -55,10 +56,14 @@ syscall_handler (struct intr_frame *f)
     case SYS_FILESIZE: read_args(f->esp, 1, args);
                        f->eax = filesize(*(int*)args[0]); break;
     case SYS_READ: read_args(f->esp, 3, args);
+                   lock_acquire(&filesys_lock);
                    f->eax = read(*(int*)args[0], *(void**)args[1], *(unsigned*)args[2]);
+                   lock_release(&filesys_lock);
                    break;
     case SYS_WRITE: read_args(f->esp, 3, args);
+                    lock_acquire(&filesys_lock);
                     f->eax = write(*(int*)args[0], *(void**)args[1], *(unsigned*)args[2]);
+                    lock_release(&filesys_lock);
                     break;
     case SYS_SEEK: read_args(f->esp, 2, args);
                    seek(*(int*)args[0], *(unsigned*)args[1]); break;
@@ -67,6 +72,7 @@ syscall_handler (struct intr_frame *f)
     case SYS_CLOSE: read_args(f->esp, 1, args);
                      close(*(int*)args[0]); break;
   }
+
 
 }
 
@@ -80,8 +86,6 @@ void read_args(void* esp, int num, void** args) {
       exit(-1);
     }
     args[i] = p;
-
-
   }
 }
 
@@ -90,6 +94,8 @@ void halt (void) {
 }
 
 void exit (int status) {
+  /* Tries to exit, but needs to wait for parent to call wait*/
+  sema_down(&thread_current()->parent->wait_sema);
   thread_current()->exit_status = status;
   printf ("%s: exit(%d)\n", thread_current()->proc_name, status);
   process_exit();
@@ -105,22 +111,19 @@ pid_t exec (const char *file_name) {
   char file_name_copy[str_len];
   strlcpy(file_name_copy, file_name, str_len);
   arg = strtok_r(file_name_copy, " ", &save_ptr);
-  struct file* file = filesys_open (arg);
-  if (!file) {
-    return -1;
-  }
 
-  pid_t pid = process_execute(file_name);
+  pid_t pid = -1;
+  if (filesys_open(arg))
+    pid = process_execute(file_name);
+
   return pid;
 }
 
 int wait (pid_t pid) {
-  // TODO: Convert pid to corresponding tid
   return process_wait(pid);
 }
 
 bool create (const char *file, unsigned initial_size) {
-
   /* Checks if file is null or an invalid pointer */
   check_valid_ptr(file);
 
@@ -139,15 +142,14 @@ bool remove (const char *file) {
   /* Checks if file is null or an invalid pointer */
   check_valid_ptr(file);
 
-
   /* Checks if filename is empty string */
   if(!strcmp(file, "")) {
     return false;
   }
-
   lock_acquire(&filesys_lock);
   bool success = filesys_remove(file);
   lock_release(&filesys_lock);
+
   return success;
 }
 
@@ -162,14 +164,14 @@ int open (const char *file) {
 
   lock_acquire(&filesys_lock);
   struct file *f = filesys_open(file);
+  lock_release(&filesys_lock);
+
   /* If the file could not be opened, return -1 */
   if (f == NULL) {
-    lock_release(&filesys_lock);
     return -1;
   }
   /* Adds file to file descriptor table */
   int fd = process_generate_fd(f);
-  lock_release(&filesys_lock);
   return fd;
 }
 
@@ -179,21 +181,22 @@ int filesize (int fd) {
 
 int read (int fd, void *buffer, unsigned length) {
 
-  if (!buffer || !is_user_vaddr(buffer)) {
-    exit(-1);
-  }
+  check_valid_ptr(buffer);
 
   if (fd == STDIN_FILENO) {
     input_getc();
     return length;
   }
 
-
   struct file *file = process_get_file(fd);
   if (!file) {
+    lock_release(&filesys_lock);
     exit(-1);
   }
-  return file_read(file, buffer, length);
+
+  int bytes_read = file_read(file, buffer, length);
+  return bytes_read;
+
 }
 
 int write (int fd, const void *buffer, unsigned length) {
@@ -208,7 +211,8 @@ int write (int fd, const void *buffer, unsigned length) {
   if (!file) {
     return -1;
   }
-  return file_write(file, buffer, length);
+  int bytes_written = file_write(file, buffer, length);
+  return bytes_written;
 }
 
 void seek (int fd, unsigned position) {
@@ -222,13 +226,20 @@ unsigned tell (int fd UNUSED) {
 }
 
 void close (int fd) {
-  struct file *file = process_get_file(fd);
-  file_close(file);
-  process_remove_fds(file);
+  process_remove_fd(fd);
 }
 
 void check_valid_ptr(void* ptr) {
-  if (!(ptr && pagedir_get_page(thread_current()->pagedir, ptr))) {
+  if (!ptr) {
+    exit(-1);
+  }
+
+  if (!is_user_vaddr(ptr)) {
+    exit(-1);
+  }
+
+  if (!pagedir_get_page(thread_current()->pagedir, ptr)) {
+    free(ptr);
     exit(-1);
   }
 }
