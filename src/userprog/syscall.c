@@ -111,13 +111,10 @@ pid_t exec (const char *file_name) {
   char file_name_copy[str_len];
   strlcpy(file_name_copy, file_name, str_len);
   arg = strtok_r(file_name_copy, " ", &save_ptr);
-  
-  struct file* file = filesys_open (arg);
 
   pid_t pid = -1;
-  if (file) {
+  if (filesys_open(arg))
     pid = process_execute(file_name);
-  }
 
   return pid;
 }
