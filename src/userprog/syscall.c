@@ -40,42 +40,78 @@ syscall_handler (struct intr_frame *f)
   /* Read the arguments of the system call and call the appropriate one */
 
   switch (syscall_num) {
-    case SYS_HALT: halt(); break;
-    case SYS_EXIT: read_args(f->esp, 1, args);
-                   exit(*(int*)args[0]); break;
-    case SYS_EXEC: read_args(f->esp, 1, args);
-                   f->eax = exec(*(char**)args[0]); thread_yield(); break;
-    case SYS_WAIT: read_args(f->esp, 1, args);
-                   f->eax = wait(*(int*)args[0]); break;
-    case SYS_CREATE: read_args(f->esp, 2, args);
-                     f->eax = create(*(char**)args[0], *(unsigned*)args[1]);
-                     break;
-    case SYS_REMOVE: read_args(f->esp, 1, args);
-                      try_acquire_filesys();
-                      f->eax = remove(*(char**)args[0]);
-                      try_release_filesys(); break;
-    case SYS_OPEN: read_args(f->esp, 1, args);
-                     try_acquire_filesys();
-                     f->eax = open(*(char**)args[0]);
-                     try_release_filesys(); break;
-    case SYS_FILESIZE: read_args(f->esp, 1, args);
-                       f->eax = filesize(*(int*)args[0]); break;
-    case SYS_READ: read_args(f->esp, 3, args);
-                  try_acquire_filesys();
-                   f->eax = read(*(int*)args[0], *(void**)args[1], *(unsigned*)args[2]);
-                   try_release_filesys();
-                   break;
-    case SYS_WRITE: read_args(f->esp, 3, args);
-                     try_acquire_filesys();
-                    f->eax = write(*(int*)args[0], *(void**)args[1], *(unsigned*)args[2]);
-                    try_release_filesys();
-                    break;
-    case SYS_SEEK: read_args(f->esp, 2, args);
-                   seek(*(int*)args[0], *(unsigned*)args[1]); break;
-    case SYS_TELL: read_args(f->esp, 1, args);
-                   f->eax = tell(*(int*)args[0]); break;
-    case SYS_CLOSE: read_args(f->esp, 1, args);
-                     close(*(int*)args[0]); break;
+    case SYS_HALT:
+    halt();
+    break;
+
+    case SYS_EXIT:
+    read_args(f->esp, 1, args);
+    exit(*(int*)args[0]);
+    break;
+
+    case SYS_EXEC:
+    read_args(f->esp, 1, args);
+    f->eax = exec(*(char**)args[0]); thread_yield();
+    break;
+
+    case SYS_WAIT:
+    read_args(f->esp, 1, args);
+    f->eax = wait(*(int*)args[0]);
+    break;
+
+    case SYS_CREATE:
+    read_args(f->esp, 2, args);
+    f->eax = create(*(char**)args[0], *(unsigned*)args[1]);
+    break;
+
+    case SYS_REMOVE:
+    read_args(f->esp, 1, args);
+    try_acquire_filesys();
+    f->eax = remove(*(char**)args[0]);
+    try_release_filesys();
+    break;
+
+    case SYS_OPEN:
+    read_args(f->esp, 1, args);
+    try_acquire_filesys();
+    f->eax = open(*(char**)args[0]);
+    try_release_filesys();
+    break;
+
+    case SYS_FILESIZE:
+    read_args(f->esp, 1, args);
+    f->eax = filesize(*(int*)args[0]);
+    break;
+
+    case SYS_READ:
+    read_args(f->esp, 3, args);
+    try_acquire_filesys();
+    f->eax = read(*(int*)args[0], *(void**)args[1], *(unsigned*)args[2]);
+    try_release_filesys();
+    break;
+
+    case SYS_WRITE:
+    read_args(f->esp, 3, args);
+    try_acquire_filesys();
+    f->eax = write(*(int*)args[0], *(void**)args[1], *(unsigned*)args[2]);
+    try_release_filesys();
+    break;
+
+    case SYS_SEEK:
+    read_args(f->esp, 2, args);
+    seek(*(int*)args[0], *(unsigned*)args[1]);
+    break;
+
+    case SYS_TELL:
+    read_args(f->esp, 1, args);
+    f->eax = tell(*(int*)args[0]);
+    break;
+
+    case SYS_CLOSE:
+    read_args(f->esp, 1, args);
+    close(*(int*)args[0]);
+    break;
+
   }
   if(filesys_lock.holder == thread_current()) {
     //lock_release(&filesys_lock);
@@ -133,17 +169,14 @@ int wait (pid_t pid) {
 
 bool create (const char *file, unsigned initial_size) {
   /* Checks if file is null or an invalid pointer */
-  try_acquire_filesys();
   check_valid_ptr(file);
 
   /* Checks if filename is empty string */
   if(!strcmp(file, "")) {
-    try_release_filesys();
     return false;
   }
 
   bool success = filesys_create(file, initial_size);
-  try_release_filesys(); 
   return success;
 }
 
