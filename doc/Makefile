@@ -41,6 +41,7 @@ clean:
 	rm -rf WWW
 	rm -f sample.tmpl.texi
 	rm -f alarmclock.pdf
+	rm -f task2_design_doc.pdf
 
 dist: pintos-ic.html pintos-ic.pdf
 	rm -rf WWW
