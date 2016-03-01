@@ -22,11 +22,7 @@
 static thread_func start_process NO_RETURN;
 static bool load (const char *cmdline, void (**eip) (void), void **esp);
 
-struct fd_elem {
-  int fd;
-  struct file *file;
-  struct list_elem elem;
-};
+
 
 /* Starts a new thread running a user program loaded from
    FILENAME.  The new thread may be scheduled (and may even exit)
@@ -87,12 +83,20 @@ start_process (void *file_name_)
   if_.cs = SEL_UCSEG;
   if_.eflags = FLAG_IF | FLAG_MBS;
   success = load (file_name[0], &if_.eip, &if_.esp);
+
+  /* Deny write for executable file currently running */
+  struct file *f = filesys_open(file_name[0]);
+  thread_current()->file = f;
+  file_deny_write(f);
+
+  /* Needs to inform the parent that it has loaded */
   sema_up(&thread_current()->parent->exec_sema);
   /* If load failed, quit. */
   if (!success) {
     palloc_free_page (file_name[0]);
     thread_exit ();
   }
+
 
   /* Determine argc. */
   int argc = 0;
@@ -159,10 +163,7 @@ start_process (void *file_name_)
      we just point the stack pointer (%esp) to our stack frame
      and jump to it. */
 
-  /* Deny write for executable file currently running */
-  struct file *f = filesys_open(file_name[0]);
-  thread_current()->file = f;
-  file_deny_write(f);
+
   asm volatile ("movl %0, %%esp; jmp intr_exit" : : "g" (&if_) : "memory");
   NOT_REACHED ();
 }

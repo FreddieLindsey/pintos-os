@@ -86,6 +86,7 @@ static void *alloc_frame (struct thread *, size_t size);
 static void schedule (void);
 void thread_schedule_tail (struct thread *prev);
 void free_priority_list(struct list *l);
+void free_fd_list(struct list *l) ;
 static tid_t allocate_tid (void);
 
 /* Initializes the threading system by transforming the code
@@ -250,8 +251,6 @@ bool thread_is_child(tid_t tid) {
       if(tid_elem->tid == tid)
         return true;
     }
-
-  // FIXME: Potential false negative
 
   return false;
 
@@ -778,6 +777,7 @@ thread_schedule_tail (struct thread *prev)
       free_priority_list(&prev->priorities);
       free_priority_list(&prev->donations);
       free_children_list(&prev->children);
+      free_fd_list(&prev->fd_list);
       palloc_free_page (prev);
     }
 }
@@ -795,8 +795,17 @@ void free_priority_list(struct list *l) {
 void free_children_list(struct list *l) {
   while (!list_empty(l)) {
     struct list_elem *e = list_pop_front(l);
-    struct priority_elem *p =  list_entry(e, struct tid_elem, elem);
-    free(p);
+    struct tid_elem *t =  list_entry(e, struct tid_elem, elem);
+    free(t);
+  }
+}
+
+/* Frees the elements in a list of fd_elem */
+void free_fd_list(struct list *l) {
+  while (!list_empty(l)) {
+    struct list_elem *e = list_pop_front(l);
+    struct fd_elem *f =  list_entry(e, struct fd_elem, elem);
+    free(f);
   }
 }
 

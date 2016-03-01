@@ -8,6 +8,7 @@
 #include "filesys/file.h"
 #include "userprog/pagedir.h"
 #include "threads/vaddr.h"
+#include "threads/malloc.h"
 
 #define MAX_ARGS 3
 
@@ -80,8 +81,6 @@ void read_args(void* esp, int num, void** args) {
       exit(-1);
     }
     args[i] = p;
-
-
   }
 }
 
@@ -90,10 +89,11 @@ void halt (void) {
 }
 
 void exit (int status) {
+  /* Tries to exit, but needs to wait for parent */
+  sema_down(&thread_current()->parent->wait_sema);
   thread_current()->exit_status = status;
   printf ("%s: exit(%d)\n", thread_current()->proc_name, status);
   process_exit();
-  sema_down(&thread_current()->parent->wait_sema);
   thread_yield();
   thread_exit();
 }
@@ -116,12 +116,10 @@ pid_t exec (const char *file_name) {
 }
 
 int wait (pid_t pid) {
-  // TODO: Convert pid to corresponding tid
   return process_wait(pid);
 }
 
 bool create (const char *file, unsigned initial_size) {
-
   /* Checks if file is null or an invalid pointer */
   check_valid_ptr(file);
 
@@ -139,7 +137,6 @@ bool create (const char *file, unsigned initial_size) {
 bool remove (const char *file) {
   /* Checks if file is null or an invalid pointer */
   check_valid_ptr(file);
-
 
   /* Checks if filename is empty string */
   if(!strcmp(file, "")) {
@@ -180,15 +177,12 @@ int filesize (int fd) {
 
 int read (int fd, void *buffer, unsigned length) {
 
-  if (!buffer || !is_user_vaddr(buffer)) {
-    exit(-1);
-  }
+  check_valid_ptr(buffer);
 
   if (fd == STDIN_FILENO) {
     input_getc();
     return length;
   }
-
 
   struct file *file = process_get_file(fd);
   if (!file) {
@@ -231,14 +225,20 @@ unsigned tell (int fd UNUSED) {
 }
 
 void close (int fd) {
-  //lock_acquire(&filesys_lock);
-  //file_close(file);
-  //lock_release(&filesys_lock);
   process_remove_fd(fd);
 }
 
 void check_valid_ptr(void* ptr) {
-  if (!(ptr && pagedir_get_page(thread_current()->pagedir, ptr))) {
+  if (!ptr) {
+    exit(-1);
+  }
+
+  if (!is_user_vaddr(ptr)) {
+    exit(-1);
+  }
+
+  if (!pagedir_get_page(thread_current()->pagedir, ptr)) {
+    free(ptr);
     exit(-1);
   }
 }

@@ -139,6 +139,12 @@ struct tid_elem {
   struct list_elem elem;
 };
 
+struct fd_elem {
+  int fd;
+  struct file *file;
+  struct list_elem elem;
+};
+
 /* If false (default), use round-robin scheduler.
    If true, use multi-level feedback queue scheduler.
    Controlled by kernel command-line option "-o mlfqs". */
