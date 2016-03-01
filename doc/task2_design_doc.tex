@@ -1,0 +1,34 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage{fullpage}
+\usepackage{rotating}
+\usepackage{titlesec}
+\usepackage{needspace}
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{hyperref}
+
+\begin{document}
+\title{OS 211 \\ TASK 2: USER PROGRAMS \\ DESIGN DOCUMENT}
+\author{
+\href{mailto:eb1314@imperial.ac.uk}{Elias Benussi} \\
+\href{mailto:jrl14@imperial.ac.uk}{James Lane} \\
+\href{mailto:fl1414@imperial.ac.uk}{Frederick Lindsey} \\
+\href{mailto:otn14@imperial.ac.uk}{Oliver Norton} \\
+}
+
+\maketitle
+
+\parskip = \baselineskip
+
+% Use letters for questions
+\titleformat{\section}
+{\needspace{1in}\Large\bfseries}{\thesection}{1em}{}
+\renewcommand{\thesubsection}{(\alph{subsection})}
+
+\input{0-preliminaries.tex}
+
+\input{A-argument-passing.tex}
+
+\input{B-system-calls.tex}
+
+\end{document}

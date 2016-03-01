@@ -1,0 +1,41 @@
+\section{ARGUMENT PASSING}
+
+\subsection*{DATA STRUCTURES}
+
+\noindent A1: (2 marks)
+Copy here the declaration of each new or changed \texttt{struct} or \texttt{struct} member, global or static variable, \texttt{typedef}, or enumeration.  Identify the purpose of each in 25 words or less.
+
+\subsection*{ALGORITHMS}
+
+\noindent A2: (8 marks)
+Briefly describe how you implemented argument parsing.  How do
+you arrange for the elements of \texttt{argv[]} to be in the right order?
+How do you avoid overflowing the stack page?
+
+We take the full string argument passed in and tokenise it using the pintos implementation of \texttt{strtok\_r()} delimited by whitespace. This gives an array of strings, which is stored in an allocated page of memory. The elements of this array are the order in which they are in the initial string, and are pushed onto the stack in reverse order, saving the stack pointer in argv each push. After pushing all of the strings onto the stack, and word aligning the stack pointer for efficient accessing, a null pointer and the pointers in argv are also pushed. Argv elements are pushed in reverse order as well, corresponding to the order of the pushed argument strings. This ensures argv is in the correct order. Finally the pointer to the start of argv is pushed and a null return address.
+
+% TODO: stack overflowing page.
+
+\subsection*{RATIONALE}
+
+\noindent A3: (5 marks)
+Why does Pintos implement strtok\_r() but not strtok()?
+
+\texttt{strtok\_r()} is reentrant which means it can be interrupted in the middle of its execution and then safely called again before the previous call finishes. \texttt{strtok()} can cause concurrency bugs if called by multiple threads due its use of global variables. Pintos would implement \texttt{strtok\_r()} rather than \texttt{strtok()} because Pintos runs multiple threads. A threadsafe version is much more useful, allowing safe use without requiring synchronisation.
+
+\noindent A4: (10 marks)
+In Pintos, the kernel separates commands into a executable name
+and arguments.  In Unix-like systems, the shell does this
+separation.  Identify at least two advantages of the Unix approach.
+
+The shell is a user program which means it cannot access kernel memory and has limited permissions. This safety barrier means that should an executable be malicious, it will not influence the overall running of other processes. On UNIX-like systems, what might happen is that a shell is terminated due to a 'crash' of the executable it is running.
+
+Another, more productive, reason to use a shell rather than run a process directly from the kernel is a shell's ability to be preconfigured. In practice, this means that the user can order executables into different directories with different, appropriate permissions for each one, and load a mutable environment variable which would prioritise executables. One example of this is the standard of using a \texttt{\$PATH} variable.
+
+Whilst normally side effects are not desired on computers, the use of environment variables and their ability to be passed as arguments to executables when used in a shell can be very powerful. Shells incorporate multiple programming paradigms such as the `for` and `while` loops which allow batch execution of processes using the variables described above.
+
+\noindent A4a: If you hold a UNIX shell to your ear, can you hear the C?
+
+% TODO: Remove joke
+
+

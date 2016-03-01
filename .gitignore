@@ -42,3 +42,7 @@ _*
 
 # build artifacts
 build/
+
+# Texpad documents
+.texpadtmp
+*.pdf
