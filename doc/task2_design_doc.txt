@@ -22,6 +22,8 @@ Oliver Norton     <otn14@imperial.ac.uk>
 >> preparing your submission, other than the Pintos documentation, course
 >> text, lecture notes, and course staff.
 
+TODO: Get from diff of task1 -> task2 for struct etc. changes
+
                ARGUMENT PASSING
                ================
 
@@ -39,38 +41,31 @@ Oliver Norton     <otn14@imperial.ac.uk>
 >> you arrange for the elements of argv[] to be in the right order?
 >> How do you avoid overflowing the stack page?
 
-We take the full string argument passed in and tokenise it using the pintos
-implementation of strtok_r() delimited by whitespace. This gives an array of
-strings, which is stored in an allocated page of memory. The elements of this
-array are the order in which they are in the initial string, and are pushed
-onto the stack in reverse order, saving the stack pointer in argv each push.
-After pushing all of the strings onto the stack, and word aligning the stack
-pointer for efficient accessing, a null pointer and the pointers in argv are
-also pushed. Argv elements are pushed in reverse order as well, corresponding
-to the order of the pushed argument strings. This ensures argv is in the correct
-order. Finally the pointer to the start of argv is pushed and a null return
-address.
+We take the full string argument passed in and tokenise it using the pintos implementation of strtok_r() delimited by whitespace. This gives an array of strings, which is stored in an allocated page of memory. The elements of this array are the order in which they are in the initial string, and are pushed onto the stack in reverse order, saving the stack pointer in argv each push. After pushing all of the strings onto the stack, and word aligning the stack pointer for efficient accessing, a null pointer and the pointers in argv are also pushed. Argv elements are pushed in reverse order as well, corresponding to the order of the pushed argument strings. This ensures argv is in the correct order. Finally the pointer to the start of argv is pushed and a null return address.
 
-****** TODO: stack overflowing page. ******
-
+TODO: stack overflowing page.
 
 ---- RATIONALE ----
 
 >> A3: (5 marks)
 >> Why does Pintos implement strtok_r() but not strtok()?
 
-strtok_r() is reentrant which means it can be interrupted in the middle of its
-execution and then safely called again before the previous call finishes.
-strtok() can cause concurrency bugs if called by multiple threads due its use
-of global variables. Pintos would implement strtok_r() rather than strtok()
-because Pintos runs multiple threads. A threadsafe version is much more useful, allowing safe use without requiring synchronisation.
+strtok_r() is reentrant which means it can be interrupted in the middle of its execution and then safely called again before the previous call finishes. strtok() can cause concurrency bugs if called by multiple threads due its use of global variables. Pintos would implement strtok_r() rather than strtok() because Pintos runs multiple threads. A threadsafe version is much more useful, allowing safe use without requiring synchronisation.
 
 >> A4: (10 marks)
 >> In Pintos, the kernel separates commands into a executable name
 >> and arguments.  In Unix-like systems, the shell does this
 >> separation.  Identify at least two advantages of the Unix approach.
 
-The shell is a user program which means it cannot access kernel memory and has limited permissions.
+The shell is a user program which means it cannot access kernel memory and has limited permissions. This safety barrier means that should an executable be malicious, it will not influence the overall running of other processes. On UNIX-like systems, what might happen is that a shell is terminated due to a 'crash' of the executable it is running.
+
+Another, more productive, reason to use a shell rather than run a process directly from the kernel is a shell's ability to be preconfigured. In practice, this means that the user can order executables into different directories with different, appropriate permissions for each one, and load a mutable environment variable which would prioritise executables. One example of this is the standard of using a `$PATH` variable.
+
+Whilst normally side effects are not desired on computers, the use of environment variables and their ability to be passed as arguments to executables when used in a shell can be very powerful. Shells incorporate multiple programming paradigms such as the `for` and `while` loops which allow batch execution of processes using the variables described above.
+
+>> A4a: If you hold a UNIX shell to your ear, can you hear the C?
+
+TODO: Remove joke
 
 
                  SYSTEM CALLS
@@ -88,11 +83,7 @@ The shell is a user program which means it cannot access kernel memory and has l
 >> Are file descriptors unique within the entire OS or just within a
 >> single process?
 
-There can be multiple file descriptors for the same open file as well as multiple
-file descriptors for the same open file within the same process. So the file
-descriptors are only unique within a single process as opposed to the whole OS.
-This is because each process has a list of file descriptors associated with it as opposed
-to a global collection of file descriptors.
+There can be multiple file descriptors for the same open file as well as multiple file descriptors for the same open file within the same process. So the file descriptors are only unique within a single process as opposed to the whole OS. This is because each process has a list of file descriptors associated with it as opposed to a global collection of file descriptors.
 
 ---- ALGORITHMS ----
 
@@ -112,20 +103,8 @@ to a global collection of file descriptors.
 >> Briefly describe your implementation of the "wait" system call
 >> and how it interacts with process termination.
 
-In terms of the system call itself, it just calls process_wait() as there is no
-need to map from pid to tid. In process_wait(), first of all, the parent thread
-looks for the thread associated with the child tid. Then the thread pointer
-is checked if it does not exist (==NULL) or whether or not that the process actually
-is a child of the current process. This is done by looking for the tid in the list of
-child tids associated with the parent process. These are errors and so return -1.
-If the process is a child on the parent process, it is then checked if wait()
-has been called on it before by the parent, it does this by checking the flag waited_upon.
-Again, this is an error so -1 is returned. Otherwise, waited_upon is set and then
-the parent process waits for if the child process has been initialised by waiting
-until the flag process_init has been set. After this it busy waits until either
-the pagedir is equal to null or the thread is equal to null. If the thread is
-equal to the null then the thread has been terminated by the kernel and -1 is returned.
-Otherwise, the process has been exited normally and the exit status is returned.
+In terms of the system call itself, it just calls process_wait() as there is no need to map from pid to tid. In process_wait(), first of all, the parent thread looks for the thread associated with the child tid. Then the thread pointer is checked if it does not exist (==NULL) or whether or not that the process actually is a child of the current process. This is done by looking for the tid in the list of child tids associated with the parent process. These are errors and so return -1.
+If the process is a child on the parent process, it is then checked if wait() has been called on it before by the parent, it does this by checking the flag waited_upon. Again, this is an error so -1 is returned. Otherwise, waited_upon is set and then the parent process waits for if the child process has been initialised by waiting until the flag process_init has been set. After this it busy waits until either the pagedir is equal to null or the thread is equal to null. If the thread is equal to the null then the thread has been terminated by the kernel and -1 is returned. Otherwise, the process has been exited normally and the exit status is returned.
 
 >> B6: (5 marks)
 >> Any access to user program memory at a user-specified address
@@ -142,10 +121,10 @@ Otherwise, the process has been exited normally and the exit status is returned.
 >> paragraph, describe the strategy or strategies you adopted for
 >> managing these issues.
 
-// Abstract error checking into separate helper functions depending on the
+TODO: Abstract error checking into separate helper functions depending on the
 type of system call.
 
-// TODO: Also add freeing temporarily allocated resources to source code
+TODO: Also add freeing temporarily allocated resources to source code
 
 
 ---- SYNCHRONIZATION ----
@@ -156,13 +135,9 @@ type of system call.
 >> loading.  How does your code ensure this?  How is the load
 >> success/failure status passed back to the thread that calls "exec"?
 
-//Use a semaphore
+TODO: Describe use of a semaphore
 
-In our code, we implemented a semaphore that is initialised at 0 and the parent
-thread calls down on the semaphore before passing the reponsibility to the executing
-thread. When the child thread has successfully or unsuccessfully loaded the file,
-it then calls up on that semaphore, so that the parent thread is unblocked only
-after the child thread has attempted to load the executable.
+In our code, we implemented a semaphore that is initialised at 0 and the parent thread calls down on the semaphore before passing the reponsibility to the executing thread. When the child thread has successfully or unsuccessfully loaded the file, it then calls up on that semaphore, so that the parent thread is unblocked only after the child thread has attempted to load the executable.
 
 >> B8: (5 marks)
 >> Consider parent process P with child process C.  How do you
@@ -172,10 +147,9 @@ after the child thread has attempted to load the executable.
 >> terminates without waiting, before C exits?  After C exits?  Are
 >> there any special cases?
 
-If wait is called before C exits, then the program busy waits by yielding until
-C is terminated either by the kernel or by an exit call.
+If wait is called before C exits, then the program busy waits by yielding until C is terminated either by the kernel or by an exit call.
 
-// Busy waits if wait is called before C exits.
+TODO: Busy waits if wait is called before C exits.
 
 
 ---- RATIONALE ----
@@ -188,23 +162,10 @@ C is terminated either by the kernel or by an exit call.
 >> What advantages or disadvantages can you see to your design
 >> for file descriptors?
 
-Since each process has its own set of file descriptors, our design is advantageous
-as each process will only have access to its own file descriptors as is specified
-in Task 2 specification. Look ups for files are also more efficient than if there was
-a global list of file descriptors for the OS as the process only has to look up
-its own file descriptors as opposed to all of them currently present. The way that the
-file descriptors are generated is by looking for gaps in the file descriptor list
-of the process and then inserting a new fd element into the list. This has the
-advantage of being fairly easy to program (increment until the fd does not match
-one in the list) and has a fairly low complexity of O(n). However, a problem
-with this approach is that the list of fds themselves need to be sorted before
-generating a new fd according to the algorithm.
+Since each process has its own set of file descriptors, our design is advantageous as each process will only have access to its own file descriptors as is specified in Task 2 specification. Look ups for files are also more efficient than if there was a global list of file descriptors for the OS as the process only has to look up its own file descriptors as opposed to all of them currently present. The way that the file descriptors are generated is by looking for gaps in the file descriptor list of the process and then inserting a new fd element into the list. This has the advantage of being fairly easy to program (increment until the fd does not match one in the list) and has a fairly low complexity of O(n). However, a problem with this approach is that the list of fds themselves need to be sorted before generating a new fd according to the algorithm.
 
 >> B11: (2 marks)
 >> The default tid_t to pid_t mapping is the identity mapping.
 >> Did you change this? Why?
 
-We decided not to change this mapping as we found that there was no need to as
-each process can only have one thread and the pid is determined by the tid of the
-thread associated with it. It also made it easier in certain functions for casting
-and in debugging as we always knew that the thread id would be the same as the process id.
+We decided not to change this mapping as we found that there was no need to as each process can only have one thread and the pid is determined by the tid of the thread associated with it. It also made it easier in certain functions for casting and in debugging as we always knew that the thread id would be the same as the process id.
