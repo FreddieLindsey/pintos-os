@@ -12,8 +12,7 @@
 
 #define MAX_ARGS 3
 
-static struct lock filesys_lock;
-
+struct lock filesys_lock;
 
 static void syscall_handler (struct intr_frame *);
 void read_args(void* esp, int num, void** args);
@@ -39,38 +38,83 @@ syscall_handler (struct intr_frame *f)
   void* args[MAX_ARGS];
 
   /* Read the arguments of the system call and call the appropriate one */
+
   switch (syscall_num) {
-    case SYS_HALT: halt(); break;
-    case SYS_EXIT: read_args(f->esp, 1, args);
-                   exit(*(int*)args[0]); break;
-    case SYS_EXEC: read_args(f->esp, 1, args);
-                   f->eax = exec(*(char**)args[0]); thread_yield(); break;
-    case SYS_WAIT: read_args(f->esp, 1, args);
-                   f->eax = wait(*(int*)args[0]); break;
-    case SYS_CREATE: read_args(f->esp, 2, args);
-                     f->eax = create(*(char**)args[0], *(unsigned*)args[1]); break;
-    case SYS_REMOVE: read_args(f->esp, 1, args);
-                     f->eax = remove(*(char**)args[0]); break;
-    case SYS_OPEN: read_args(f->esp, 1, args);
-                     f->eax = open(*(char**)args[0]); break;
-    case SYS_FILESIZE: read_args(f->esp, 1, args);
-                       f->eax = filesize(*(int*)args[0]); break;
-    case SYS_READ: read_args(f->esp, 3, args);
-                   lock_acquire(&filesys_lock);
-                   f->eax = read(*(int*)args[0], *(void**)args[1], *(unsigned*)args[2]);
-                   lock_release(&filesys_lock);
-                   break;
-    case SYS_WRITE: read_args(f->esp, 3, args);
-                    lock_acquire(&filesys_lock);
-                    f->eax = write(*(int*)args[0], *(void**)args[1], *(unsigned*)args[2]);
-                    lock_release(&filesys_lock);
-                    break;
-    case SYS_SEEK: read_args(f->esp, 2, args);
-                   seek(*(int*)args[0], *(unsigned*)args[1]); break;
-    case SYS_TELL: read_args(f->esp, 1, args);
-                   f->eax = tell(*(int*)args[0]); break;
-    case SYS_CLOSE: read_args(f->esp, 1, args);
-                     close(*(int*)args[0]); break;
+    case SYS_HALT:
+    halt();
+    break;
+
+    case SYS_EXIT:
+    read_args(f->esp, 1, args);
+    exit(*(int*)args[0]);
+    break;
+
+    case SYS_EXEC:
+    read_args(f->esp, 1, args);
+    f->eax = exec(*(char**)args[0]); thread_yield();
+    break;
+
+    case SYS_WAIT:
+    read_args(f->esp, 1, args);
+    f->eax = wait(*(int*)args[0]);
+    break;
+
+    case SYS_CREATE:
+    read_args(f->esp, 2, args);
+    f->eax = create(*(char**)args[0], *(unsigned*)args[1]);
+    break;
+
+    case SYS_REMOVE:
+    read_args(f->esp, 1, args);
+    try_acquire_filesys();
+    f->eax = remove(*(char**)args[0]);
+    try_release_filesys();
+    break;
+
+    case SYS_OPEN:
+    read_args(f->esp, 1, args);
+    try_acquire_filesys();
+    f->eax = open(*(char**)args[0]);
+    try_release_filesys();
+    break;
+
+    case SYS_FILESIZE:
+    read_args(f->esp, 1, args);
+    f->eax = filesize(*(int*)args[0]);
+    break;
+
+    case SYS_READ:
+    read_args(f->esp, 3, args);
+    try_acquire_filesys();
+    f->eax = read(*(int*)args[0], *(void**)args[1], *(unsigned*)args[2]);
+    try_release_filesys();
+    break;
+
+    case SYS_WRITE:
+    read_args(f->esp, 3, args);
+    try_acquire_filesys();
+    f->eax = write(*(int*)args[0], *(void**)args[1], *(unsigned*)args[2]);
+    try_release_filesys();
+    break;
+
+    case SYS_SEEK:
+    read_args(f->esp, 2, args);
+    seek(*(int*)args[0], *(unsigned*)args[1]);
+    break;
+
+    case SYS_TELL:
+    read_args(f->esp, 1, args);
+    f->eax = tell(*(int*)args[0]);
+    break;
+
+    case SYS_CLOSE:
+    read_args(f->esp, 1, args);
+    close(*(int*)args[0]);
+    break;
+
+  }
+  if(filesys_lock.holder == thread_current()) {
+    //lock_release(&filesys_lock);
   }
 
 
@@ -113,9 +157,9 @@ pid_t exec (const char *file_name) {
   arg = strtok_r(file_name_copy, " ", &save_ptr);
 
   pid_t pid = -1;
-  if (filesys_open(arg))
+  if (filesys_open(arg)) {
     pid = process_execute(file_name);
-
+  }
   return pid;
 }
 
@@ -132,9 +176,7 @@ bool create (const char *file, unsigned initial_size) {
     return false;
   }
 
-  lock_acquire(&filesys_lock);
   bool success = filesys_create(file, initial_size);
-  lock_release(&filesys_lock);
   return success;
 }
 
@@ -146,9 +188,7 @@ bool remove (const char *file) {
   if(!strcmp(file, "")) {
     return false;
   }
-  lock_acquire(&filesys_lock);
   bool success = filesys_remove(file);
-  lock_release(&filesys_lock);
 
   return success;
 }
@@ -162,9 +202,7 @@ int open (const char *file) {
     return -1;
   }
 
-  lock_acquire(&filesys_lock);
   struct file *f = filesys_open(file);
-  lock_release(&filesys_lock);
 
   /* If the file could not be opened, return -1 */
   if (f == NULL) {
@@ -241,5 +279,17 @@ void check_valid_ptr(void* ptr) {
   if (!pagedir_get_page(thread_current()->pagedir, ptr)) {
     free(ptr);
     exit(-1);
+  }
+}
+
+void try_release_filesys() {
+  if(filesys_lock.holder == thread_current()) {
+    lock_release(&filesys_lock);
+  }
+}
+
+void try_acquire_filesys() {
+  if(filesys_lock.holder != thread_current()) {
+    lock_acquire(&filesys_lock);
   }
 }

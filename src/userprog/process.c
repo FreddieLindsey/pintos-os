@@ -55,7 +55,7 @@ process_execute (const char *file_name)
 
   /* Create a new thread to execute FILE_NAME. */
   tid = thread_create (file_name, PRI_DEFAULT, start_process, args);
-  sema_down(&thread_current()->sema);
+  sema_down(&thread_current()->exec_sema);
 
   if (tid == TID_ERROR) {
     palloc_free_page (fn_copy);
@@ -219,7 +219,10 @@ process_exit (void)
   uint32_t *pd;
 
   /* this allows write on the executable file once it stops running */
-  file_allow_write(cur->file);
+  struct file* f = cur->file;
+  if (f) {
+    file_allow_write(f);
+  }
 
   /* Destroy the current process's page directory and switch back
      to the kernel-only page directory. */

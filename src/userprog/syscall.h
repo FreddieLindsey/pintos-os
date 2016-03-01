@@ -23,5 +23,6 @@ int write (int fd, const void *buffer, unsigned length);
 void seek (int fd, unsigned position);
 unsigned tell (int fd);
 void close (int fd);
+void try_release_filesys();
 
 #endif /* userprog/syscall.h */
