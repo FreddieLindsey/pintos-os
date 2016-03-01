@@ -93,6 +93,7 @@ void exit (int status) {
   thread_current()->exit_status = status;
   printf ("%s: exit(%d)\n", thread_current()->proc_name, status);
   process_exit();
+  sema_down(&thread_current()->parent->wait_sema);
   thread_yield();
   thread_exit();
 }
@@ -193,7 +194,12 @@ int read (int fd, void *buffer, unsigned length) {
   if (!file) {
     exit(-1);
   }
-  return file_read(file, buffer, length);
+
+  lock_acquire(&filesys_lock);
+  int bytes_read = file_read(file, buffer, length);
+  lock_release(&filesys_lock);
+  return bytes_read;
+
 }
 
 int write (int fd, const void *buffer, unsigned length) {
@@ -208,7 +214,10 @@ int write (int fd, const void *buffer, unsigned length) {
   if (!file) {
     return -1;
   }
-  return file_write(file, buffer, length);
+  lock_acquire(&filesys_lock);
+  int bytes_written = file_write(file, buffer, length);
+  lock_release(&filesys_lock);
+  return bytes_written;
 }
 
 void seek (int fd, unsigned position) {
@@ -222,9 +231,10 @@ unsigned tell (int fd UNUSED) {
 }
 
 void close (int fd) {
-  struct file *file = process_get_file(fd);
-  file_close(file);
-  process_remove_fds(file);
+  //lock_acquire(&filesys_lock);
+  //file_close(file);
+  //lock_release(&filesys_lock);
+  process_remove_fd(fd);
 }
 
 void check_valid_ptr(void* ptr) {

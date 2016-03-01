@@ -200,6 +200,10 @@ thread_create (const char *name, int priority,
 
   /* Initialize thread. */
   init_thread (t, name, priority);
+  /* Set the parent of child process as current thread */
+  #ifdef USERPROG
+  t->parent = thread_current();
+  #endif
   tid = t->tid = allocate_tid ();
 
   struct tid_elem* tid_elem = malloc(sizeof(struct tid_elem));
@@ -351,7 +355,6 @@ void
 thread_exit (void)
 {
   ASSERT (!intr_context ());
-
 
 #ifdef USERPROG
   process_exit ();
@@ -645,8 +648,12 @@ init_thread (struct thread *t, const char *name, int priority)
   list_init(&t->donations);
 
   #ifdef USERPROG
-      /* THis is the initialisation for the list of child threads */
+      /* This is the initialisation for the list of child threads */
       list_init(&t->children);
+      /* Initialise semaphore for exec */
+      sema_init(&t->exec_sema, 0);
+      /* Initialise semaphore for wait */
+      sema_init(&t->wait_sema, 0);
   #endif
 
   sema_init(&t->sema, 0);

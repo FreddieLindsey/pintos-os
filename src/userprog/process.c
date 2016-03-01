@@ -59,6 +59,8 @@ process_execute (const char *file_name)
 
   /* Create a new thread to execute FILE_NAME. */
   tid = thread_create (file_name, PRI_DEFAULT, start_process, args);
+  sema_down(&thread_current()->sema);
+
   if (tid == TID_ERROR) {
     palloc_free_page (fn_copy);
     palloc_free_page (args);
@@ -85,6 +87,7 @@ start_process (void *file_name_)
   if_.cs = SEL_UCSEG;
   if_.eflags = FLAG_IF | FLAG_MBS;
   success = load (file_name[0], &if_.eip, &if_.esp);
+  sema_up(&thread_current()->parent->exec_sema);
   /* If load failed, quit. */
   if (!success) {
     palloc_free_page (file_name[0]);
@@ -183,6 +186,7 @@ process_wait (tid_t child_tid)
   /* Try to find thread */
   struct thread *t = thread_find_thread(child_tid);
 
+
   /* Check if TID is invalid and it is not child of calling process */
   if ((t == NULL) || !thread_is_child(t->tid))
     return -1;
@@ -193,6 +197,7 @@ process_wait (tid_t child_tid)
 
   t->waited_upon = 1;
   /* Wait until termination either by kernel or process_exit */
+  sema_up(&thread_current()->wait_sema);
   while (!t->process_init) { thread_yield(); } // Hold until process_init
   while(!(t == NULL || t->pagedir == NULL)) {
     t = thread_find_thread(child_tid);
@@ -302,16 +307,17 @@ struct file* process_get_file(int fd) {
   return NULL;
 }
 
-void process_remove_fds(struct file *file) {
+void process_remove_fd(int fd) {
   struct list_elem *e;
   struct list* fd_list = &thread_current()->fd_list;
 
   for (e = list_begin(fd_list); e != list_end(fd_list); e = list_next(e)) {
     struct fd_elem* f = list_entry(e, struct fd_elem, elem);
 
-    /* Found the file in the table so remove the fd_elem */
-    if (f->file == file) {
+    /* Found the fd in the table so remove the fd_elem */
+    if (f->fd == fd) {
       list_remove(e);
+      break;
     }
   }
 }

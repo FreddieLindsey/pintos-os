@@ -11,7 +11,7 @@ void process_activate (void);
 
 int process_generate_fd(struct file *file);
 struct file* process_get_file(int fd);
-void process_remove_fds(struct file *file);
+void process_remove_fd(int fd);
 
 /* Process identifier type. */
 typedef int pid_t;

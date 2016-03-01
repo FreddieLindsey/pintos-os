@@ -116,6 +116,9 @@ struct thread
     char* proc_name;
     struct list fd_list;
     struct file* file;                  /* Executable associated file */
+    struct semaphore exec_sema;         /* Controls sync in exec */
+    struct semaphore wait_sema;
+    struct thread* parent;               /* Parent process */
 #endif
 
     /* Owned by thread.c. */
