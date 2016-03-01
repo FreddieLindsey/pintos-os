@@ -12,8 +12,7 @@
 
 #define MAX_ARGS 3
 
-static struct lock filesys_lock;
-
+struct lock filesys_lock;
 
 static void syscall_handler (struct intr_frame *);
 void read_args(void* esp, int num, void** args);

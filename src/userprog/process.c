@@ -85,9 +85,11 @@ start_process (void *file_name_)
   success = load (file_name[0], &if_.eip, &if_.esp);
 
   /* Deny write for executable file currently running */
+  lock_acquire(&filesys_lock);
   struct file *f = filesys_open(file_name[0]);
   thread_current()->file = f;
   file_deny_write(f);
+  lock_release(&filesys_lock);
 
   /* Needs to inform the parent that it has loaded */
   sema_up(&thread_current()->parent->exec_sema);
