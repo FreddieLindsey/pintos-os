@@ -354,6 +354,8 @@ void
 thread_exit (void)
 {
   ASSERT (!intr_context ());
+  try_release_filesys();
+
 
 #ifdef USERPROG
   process_exit ();
