@@ -120,7 +120,12 @@ kernel in the way that you did?
 
 % --------------------------------------------------------------
 
-% TODO
+Before every access to user memory we make sure to at least check that the pointer isn't null, that it is below PHYS\_BASE, and  that it is mapped to a physical address.
+In most calls, such as write(), all checks are necessary because
+but read() for example doesn't require the pointer to be mapped, however we decided to use check\_valid\_ptr() for consistency even though this causes an unnecessary inspection of the page table.
+We also considered checking both the start address and the end address of the data to be accessed to make sure the whole segment is valid.
+In most cases where this could be useful, such as read() and write() this check can be done using the length of the data segment and the pointer to the start of the user data to find the end address. However in cases such as exec() this wasn't so easily doable and our implementation allowed us to pass most of the tests anyway, keeping the code simpler to read at the same time. 
+
 
 % --------------------------------------------------------------
 
