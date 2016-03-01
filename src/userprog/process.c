@@ -87,8 +87,7 @@ start_process (void *file_name_)
   /* Deny write for executable file currently running */
   struct file *f = filesys_open(file_name[0]);
   thread_current()->file = f;
-  if (!f)
-    file_deny_write(f);
+  file_deny_write(f);
 
   /* Needs to inform the parent that it has loaded */
   sema_up(&thread_current()->parent->exec_sema);
@@ -220,7 +219,10 @@ process_exit (void)
   uint32_t *pd;
 
   /* this allows write on the executable file once it stops running */
-  file_allow_write(cur->file);
+  struct file* f = cur->file;
+  if (f) {
+    file_allow_write(f);
+  }
 
   /* Destroy the current process's page directory and switch back
      to the kernel-only page directory. */
