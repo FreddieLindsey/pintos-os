@@ -60,10 +60,17 @@ process_execute (const char *file_name)
   tid = thread_create (file_name, PRI_DEFAULT, start_process, args);
   sema_down(&thread_current()->exec_sema);
 
+
   if (tid == TID_ERROR) {
     palloc_free_page (fn_copy);
     palloc_free_page (args);
+    return TID_ERROR;
   }
+
+  if(!thread_current()->loaded) {
+    return -1;
+  }
+
   return tid;
 }
 
@@ -85,14 +92,16 @@ start_process (void *file_name_)
   if_.cs = SEL_UCSEG;
   if_.eflags = FLAG_IF | FLAG_MBS;
   success = load (file_name[0], &if_.eip, &if_.esp);
-
+  thread_current()->parent->loaded = success;
+  sema_up(&thread_current()->parent->exec_sema);
   /* Deny write for executable file currently running */
-  struct file *f = filesys_open(file_name[0]);
-  thread_current()->file = f;
-  file_deny_write(f);
+  if (success) {
+    struct file *f = filesys_open(file_name[0]);
+    thread_current()->file = f;
+    file_deny_write(f);
+  }
 
   /* Needs to inform the parent that it has loaded */
-  sema_up(&thread_current()->parent->exec_sema);
   /* If load failed, quit. */
   if (!success) {
     palloc_free_page (file_name[0]);
@@ -185,10 +194,8 @@ start_process (void *file_name_)
 int
 process_wait (tid_t child_tid)
 {
-
   /* Try to find thread */
   struct thread *t = thread_find_thread(child_tid);
-
 
   /* Check if TID is invalid and it is not child of calling process */
   if ((t == NULL) || !thread_is_child(t->tid))
