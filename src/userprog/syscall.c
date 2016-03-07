@@ -132,10 +132,10 @@ void halt (void) {
 
 void exit (int status) {
   /* Tries to exit, but needs to wait for parent to call wait*/
-  sema_down(&thread_current()->parent->wait_sema);
   thread_current()->exit_status = status;
   printf ("%s: exit(%d)\n", thread_current()->proc_name, status);
   process_exit();
+  sema_down(&thread_current()->parent->wait_sema);
   thread_yield();
   thread_exit();
 }

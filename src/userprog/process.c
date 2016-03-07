@@ -64,7 +64,6 @@ process_execute (const char *file_name)
     palloc_free_page (fn_copy);
     palloc_free_page (args);
   }
-    // TODO: Potentially need to free args elsewhere also
   return tid;
 }
 
@@ -201,8 +200,8 @@ process_wait (tid_t child_tid)
 
   t->waited_upon = 1;
   /* Wait until termination either by kernel or process_exit */
-  sema_up(&thread_current()->wait_sema);
   while (!t->process_init) { thread_yield(); } // Hold until process_init
+  sema_up(&thread_current()->wait_sema);
   while(!(t == NULL || t->pagedir == NULL)) {
     t = thread_find_thread(child_tid);
     thread_yield();
@@ -212,6 +211,7 @@ process_wait (tid_t child_tid)
     return -1;
   else
     return t->exit_status;
+
 }
 
 /* Free the current process's resources. */
@@ -326,6 +326,7 @@ void process_remove_fd(int fd) {
     /* Found the fd in the table so remove the fd_elem */
     if (f->fd == fd) {
       list_remove(e);
+      free(f);
       break;
     }
   }
