@@ -48,6 +48,8 @@ process_execute (const char *file_name)
   char *token, *save_ptr;
   char **args;
   args = palloc_get_page (PAL_USER);
+  thread_current()->fn_copy = fn_copy;
+  thread_current()->args = args;
   int j = 0;
   for (token = strtok_r(fn_copy, " ", &save_ptr); token != NULL;
       token = strtok_r(NULL, " ", &save_ptr)) {
@@ -67,7 +69,7 @@ process_execute (const char *file_name)
     return TID_ERROR;
   }
 
-  if(!thread_current()->loaded) {
+  if(!thread_current()->child_loaded) {
     return -1;
   }
 
@@ -92,7 +94,8 @@ start_process (void *file_name_)
   if_.cs = SEL_UCSEG;
   if_.eflags = FLAG_IF | FLAG_MBS;
   success = load (file_name[0], &if_.eip, &if_.esp);
-  thread_current()->parent->loaded = success;
+  /* Needs to inform the parent that it has loaded */
+  thread_current()->parent->child_loaded = success;
   sema_up(&thread_current()->parent->exec_sema);
   /* Deny write for executable file currently running */
   if (success) {
@@ -101,7 +104,6 @@ start_process (void *file_name_)
     file_deny_write(f);
   }
 
-  /* Needs to inform the parent that it has loaded */
   /* If load failed, quit. */
   if (!success) {
     palloc_free_page (file_name[0]);
@@ -214,6 +216,7 @@ process_wait (tid_t child_tid)
     thread_yield();
   }
   /* If terminated by kernel */
+  printf("child thread: %p\n", t);
   if (t == NULL)
     return -1;
   else
@@ -248,6 +251,7 @@ process_exit (void)
          directory before destroying the process's page
          directory, or our active page directory will be one
          that's been freed (and cleared). */
+      palloc_free_page(cur->fn_copy);
       cur->pagedir = NULL;
       pagedir_activate (NULL);
       pagedir_destroy (pd);
@@ -333,6 +337,7 @@ void process_remove_fd(int fd) {
     /* Found the fd in the table so remove the fd_elem */
     if (f->fd == fd) {
       list_remove(e);
+      file_close(f->file);
       free(f);
       break;
     }

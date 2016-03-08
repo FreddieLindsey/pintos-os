@@ -115,12 +115,14 @@ struct thread
     struct list page_table;              /* Supplemental page table */
     int process_init;                   /* Process initiated */
     char* proc_name;
+    char* fn_copy;
+    char** args;
     struct list fd_list;
     struct file* file;                  /* Executable associated file */
     struct semaphore exec_sema;         /* Controls sync in exec */
     struct semaphore wait_sema;
     struct thread* parent;               /* Parent process */
-    int loaded;
+    int child_loaded;
 #endif
 
     /* Owned by thread.c. */
