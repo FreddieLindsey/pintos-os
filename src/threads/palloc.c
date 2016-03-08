@@ -10,6 +10,7 @@
 #include "threads/loader.h"
 #include "threads/synch.h"
 #include "threads/vaddr.h"
+#include "vm/frame.h"
 
 /* Page allocator.  Hands out memory in page-size (or
    page-multiple) chunks.  See malloc.h for an allocator that
@@ -146,6 +147,8 @@ void
 palloc_free_page (void *page)
 {
   palloc_free_multiple (page, 1);
+  /* Removes reference of page from frame_table */
+  frame_free(page);
 }
 
 /* Initializes pool P as starting at START and ending at END,

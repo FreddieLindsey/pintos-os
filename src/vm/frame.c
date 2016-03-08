@@ -30,3 +30,17 @@ void frame_alloc(void* page) {
     exit(-1);
   }
 }
+
+void frame_free(void* page) {
+  unsigned f;
+  int allocated = 0;
+  for(f = 0; f < num_frames; f++) {
+    if (frame_table[f] != NULL && frame_table[f]->page == page) {
+      free(frame_table[f]);
+    }
+  }
+
+  if (!allocated) {
+    exit(-1);
+  }
+}
