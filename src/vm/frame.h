@@ -9,6 +9,7 @@ struct frame {
 };
 
 void frame_init(int num_of_frames);
+void frame_alloc(void* page);
 
 
 #endif
