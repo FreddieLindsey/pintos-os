@@ -93,7 +93,8 @@ main (void)
      then enable console locking. */
   thread_init ();
   console_init ();
-  frame_init(user_page_limit);
+
+
 
   /* Greet user. */
   printf ("Pintos booting with %'"PRIu32" kB RAM...\n",
@@ -130,6 +131,10 @@ main (void)
   ide_init ();
   locate_block_devices ();
   filesys_init (format_filesys);
+#endif
+
+#ifdef VM
+  frame_init(user_page_limit);
 #endif
 
   printf ("Boot complete.\n");

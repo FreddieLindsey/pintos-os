@@ -10,7 +10,6 @@ static struct lock frame_table_lock; /* lock for mutual exclusion */
 static size_t num_frames;
 
 void frame_init(int num_of_frames) {
-
   num_frames = num_of_frames;
   frame_table = malloc(sizeof(struct frame*)*num_frames);
   lock_init(&frame_table_lock);
@@ -18,6 +17,10 @@ void frame_init(int num_of_frames) {
 }
 
 void frame_alloc(void* page) {
+
+  if (!page) {
+    return;
+  }
   unsigned f;
   for(f = 0; f < num_frames; f++) {
     lock_acquire(&frame_table_lock);
