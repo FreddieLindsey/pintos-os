@@ -413,6 +413,8 @@ load (const char *file_name, void (**eip) (void), void **esp)
 
   /* Allocate and activate page directory. */
   t->pagedir = pagedir_create ();
+  /* Initialise page table */
+  list_init(&t->page_table);
   t->process_init = 1; // Signal that the process has started
   if (t->pagedir == NULL)
     goto done;
