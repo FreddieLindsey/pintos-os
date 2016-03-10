@@ -148,6 +148,19 @@ page_fault (struct intr_frame *f)
   not_present = (f->error_code & PF_P) == 0;
   write = (f->error_code & PF_W) != 0;
   user = (f->error_code & PF_U) != 0;
+
+  /* Locate page that faulted in supplemental page table */
+  void* page;
+
+  /* Obtain a frame */
+  frame_alloc(page);
+
+  /* Fetch data into the frame */
+
+  /* Point the page table entry for the faulting virtual address to the frame */
+
+
+
   exit(-1);
 
 
