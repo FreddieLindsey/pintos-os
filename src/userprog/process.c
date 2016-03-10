@@ -38,7 +38,7 @@ process_execute (const char *file_name)
   /* Make a copy of FILE_NAME.
      Otherwise there's a race between the caller and load(). */
   fn_copy = palloc_get_page (PAL_USER);
-  frame_alloc(fn_copy);
+
   if (fn_copy == NULL)
     return TID_ERROR;
   strlcpy (fn_copy, file_name, PGSIZE);
@@ -47,7 +47,6 @@ process_execute (const char *file_name)
   char *token, *save_ptr;
   char **args;
   args = palloc_get_page (PAL_USER);
-  frame_alloc(args);
   int j = 0;
   for (token = strtok_r(fn_copy, " ", &save_ptr); token != NULL;
       token = strtok_r(NULL, " ", &save_ptr)) {
