@@ -110,7 +110,14 @@ palloc_get_multiple (enum palloc_flags flags, size_t page_cnt)
 void *
 palloc_get_page (enum palloc_flags flags)
 {
-  return palloc_get_multiple (flags, 1);
+  void * page = palloc_get_multiple (flags, 1);
+
+  #ifdef VM
+    if (flags & PAL_USER) {
+      frame_alloc(page);
+    }
+  #endif
+  return page;
 }
 
 /* Frees the PAGE_CNT pages starting at PAGES. */
@@ -145,6 +152,12 @@ palloc_free_multiple (void *pages, size_t page_cnt)
 void
 palloc_free_page (void *page)
 {
+  /* Removes reference of page from frame_table */
+  #ifdef VM
+    if(page_from_pool(&user_pool, page)) {
+      frame_free(page);
+    }
+  #endif
   palloc_free_multiple (page, 1);
 }
 

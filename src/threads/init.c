@@ -37,6 +37,10 @@
 #include "filesys/filesys.h"
 #include "filesys/fsutil.h"
 #endif
+#ifdef VM
+#include "vm/frame.h"
+#endif
+
 
 /* Page directory with kernel mappings only. */
 uint32_t *init_page_dir;
@@ -90,6 +94,8 @@ main (void)
   thread_init ();
   console_init ();
 
+
+
   /* Greet user. */
   printf ("Pintos booting with %'"PRIu32" kB RAM...\n",
           init_ram_pages * PGSIZE / 1024);
@@ -125,6 +131,10 @@ main (void)
   ide_init ();
   locate_block_devices ();
   filesys_init (format_filesys);
+#endif
+
+#ifdef VM
+  frame_init(user_page_limit);
 #endif
 
   printf ("Boot complete.\n");
