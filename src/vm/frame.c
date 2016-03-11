@@ -15,10 +15,10 @@ void frame_init(int num_of_frames) {
   lock_init(&frame_table_lock);
 }
 
-void frame_alloc(void* page) {
+struct frame* frame_alloc(void* page) {
 
   if (!page) {
-    return;
+    return NULL;
   }
 
 
@@ -32,7 +32,7 @@ void frame_alloc(void* page) {
       frame->num = f;
       frame_table[f] = frame;
       lock_release(&frame_table_lock);
-      return;
+      return frame;
     }
     lock_release(&frame_table_lock);
   }

@@ -10,7 +10,7 @@ struct frame {
 };
 
 void frame_init(int num_of_frames);
-void frame_alloc(void* page);
+struct frame* frame_alloc(void* page);
 void frame_free(void* page);
 
 

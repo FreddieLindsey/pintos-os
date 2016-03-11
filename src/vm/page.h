@@ -7,7 +7,7 @@
 struct page {
   void *addr; /* virtual address of page */
   void *data;  /* The data that should be in the page */
-  void *frame; /* The frame that is associated with the page */
+  struct frame *frame; /* The frame that is associated with the page */
   struct list_elem elem;
 };
 

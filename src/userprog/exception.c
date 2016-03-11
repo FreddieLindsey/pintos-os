@@ -163,15 +163,12 @@ page_fault (struct intr_frame *f)
   }
 
   /* Obtain a frame */
-  frame_alloc(page);
+  struct frame* frame = frame_alloc(page);
 
   /* Fetch data into the frame */
 
   /* Point the page table entry for the faulting virtual address to the frame */
-
-
-
-  exit(-1);
+  page->frame = frame;
 
 
   /* To implement virtual memory, delete the rest of the function
