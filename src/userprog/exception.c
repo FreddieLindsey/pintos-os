@@ -5,6 +5,8 @@
 #include "threads/interrupt.h"
 #include "threads/thread.h"
 #include "userprog/syscall.h"
+#include "vm/page.h"
+#include "threads/pte.h"
 
 /* Number of page faults processed. */
 static long long page_fault_cnt;
@@ -150,7 +152,15 @@ page_fault (struct intr_frame *f)
   user = (f->error_code & PF_U) != 0;
 
   /* Locate page that faulted in supplemental page table */
-  void* page;
+  struct page* page = page_get_page(&thread_current()->page_table, fault_addr);
+  if(!page) {
+    exit(-1);
+  }
+
+  /* If trying to write to a read only, terminate */
+  if(!(PTE_W & pagedir_get_page(thread_current()->pagedir, fault_addr)) && write) {
+    exit(-1);
+  }
 
   /* Obtain a frame */
   frame_alloc(page);

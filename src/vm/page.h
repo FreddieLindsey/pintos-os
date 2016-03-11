@@ -12,6 +12,7 @@ struct page {
 };
 
 void page_add_page(struct list *page_table, void *addr, void * data);
+struct page* page_get_page(struct list *page_table, void *addr);
 
 
 #endif
