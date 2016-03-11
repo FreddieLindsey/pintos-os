@@ -142,7 +142,7 @@ void exit (int status) {
 
 pid_t exec (const char *file_name) {
   check_valid_ptr(file_name);
-
+  
   char *arg, *save_ptr;
   int str_len = strlen(file_name) + 1;
   char file_name_copy[str_len];

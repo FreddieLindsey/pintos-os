@@ -5,9 +5,13 @@
 #include <stdint.h>
 
 struct page {
-  uint32_t page; /* Address of page */
+  void *addr; /* virtual address of page */
+  void *data;  /* The data that should be in the page */
+  void *frame; /* The frame that is associated with the page */
   struct list_elem elem;
 };
+
+void page_add_page(struct list *page_table, void *addr, void * data);
 
 
 #endif

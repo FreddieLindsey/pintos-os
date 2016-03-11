@@ -5,6 +5,7 @@
 
 struct frame {
   void* page;  /* pointer to user page */
+  uint32_t num; /* frame number */
   pid_t pid;   /* id of the process that owns the frame */
 };
 

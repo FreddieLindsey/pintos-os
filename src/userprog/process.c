@@ -19,6 +19,7 @@
 #include "threads/thread.h"
 #include "threads/vaddr.h"
 #include "vm/frame.h"
+#include "vm/page.h"
 
 static thread_func start_process NO_RETURN;
 static bool load (const char *cmdline, void (**eip) (void), void **esp);
@@ -491,7 +492,6 @@ load (const char *file_name, void (**eip) (void), void **esp)
                   zero_bytes = ROUND_UP (page_offset + phdr.p_memsz, PGSIZE);
                 }
 
-              // TODO: FAILS HERE!!!
 
               if (!load_segment (file, file_page, (void *) mem_page,
                                  read_bytes, zero_bytes, writable))
@@ -659,8 +659,16 @@ install_page (void *upage, void *kpage, bool writable)
 {
   struct thread *t = thread_current ();
 
+
+
   /* Verify that there's not already a page at that virtual
      address, then map our page there. */
-  return (pagedir_get_page (t->pagedir, upage) == NULL
+  bool result = (pagedir_get_page (t->pagedir, upage) == NULL
           && pagedir_set_page (t->pagedir, upage, kpage, writable));
+
+  /* Add to supplemental page table if not already mapped and then successfully mapped */
+  if (result) {
+    page_add_page(&thread_current()->page_table, upage, kpage);
+  }
+  return result;
 }
