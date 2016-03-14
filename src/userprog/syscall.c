@@ -113,6 +113,16 @@ syscall_handler (struct intr_frame *f)
     read_args(f->esp, 1, args);
     close(*(int*)args[0]);
     break;
+
+    case SYS_MMAP:
+    read_args(f->esp, 2, args);
+    f->eax = mmap(*(int*)args[0], *(void**)args[1]);
+    break;
+
+    case SYS_MUNMAP:
+    read_args(f->esp, 1, args);
+    munmap(*(mapid_t*)args[0]);
+    break;
   }
 }
 
@@ -264,6 +274,17 @@ unsigned tell (int fd UNUSED) {
 
 void close (int fd) {
   process_remove_fd(fd);
+}
+
+/* Maps an opened file fd to memory, at the address data. */
+mapid_t mmap (int fd, void *data) {
+  // TODO:
+  return NULL;
+}
+
+/* Unmaps mapped memory. */
+void munmap (mapid_t map) {
+  // TODO:
 }
 
 void check_valid_ptr(void* ptr) {

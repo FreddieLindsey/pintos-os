@@ -4,6 +4,9 @@
 #include <stdbool.h>
 #include "userprog/process.h"
 
+// TODO: remove this?
+// for compilation
+typedef int mapid_t;
 
 void syscall_init (void);
 
@@ -23,7 +26,8 @@ int write (int fd, const void *buffer, unsigned length);
 void seek (int fd, unsigned position);
 unsigned tell (int fd);
 void close (int fd);
-void try_release_filesys();
+mapid_t mmap (int fd, void *data);
+void munmap (mapid_t map);
 
 
 #endif /* userprog/syscall.h */
