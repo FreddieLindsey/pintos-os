@@ -668,7 +668,6 @@ install_page (void *upage, void *kpage, bool writable)
 
   /* Add to supplemental page table if not already mapped and then successfully mapped */
   if (result) {
-    page_add_page(&thread_current()->page_table, upage, kpage);
   }
   return result;
 }

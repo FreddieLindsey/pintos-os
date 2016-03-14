@@ -3,16 +3,24 @@
 
 #include <list.h>
 #include <stdint.h>
+#include <stdbool.h>
+#include "devices/block.h"
 
 struct page {
   void *addr; /* virtual address of page */
-  void *data;  /* The data that should be in the page */
+  bool read_only;
+
   struct frame *frame; /* The frame that is associated with the page */
+
+  block_sector_t sector;
+
+  struct file *file;
   struct list_elem elem;
 };
 
-void page_add_page(struct list *page_table, void *addr, void * data);
-struct page* page_get_page(struct list *page_table, void *addr);
 
+struct page* page_alloc(struct list *page_table, void *addr, bool read_only);
+struct page* page_get_page_from_addr(struct list *page_table, void *addr);
+bool page_in (void *addr);
 
 #endif
