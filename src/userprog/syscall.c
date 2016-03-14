@@ -276,15 +276,14 @@ void close (int fd) {
   process_remove_fd(fd);
 }
 
-/* Maps an opened file fd to memory, at the address data. */
-mapid_t mmap (int fd, void *data) {
-  // TODO:
-  return NULL;
+/* Maps an opened file fd to memory, at address addr. */
+mapid_t mmap (int fd, void *addr) {
+  // TODO: map file to memory, put in mapping table, use lock
 }
 
 /* Unmaps mapped memory. */
 void munmap (mapid_t map) {
-  // TODO:
+  // TODO: free memory, remove from mapping table, use lock
 }
 
 void check_valid_ptr(void* ptr) {
