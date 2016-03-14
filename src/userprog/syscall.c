@@ -9,6 +9,7 @@
 #include "userprog/pagedir.h"
 #include "threads/vaddr.h"
 #include "threads/malloc.h"
+#include "threads/palloc.h"
 
 #define MAX_ARGS 3
 
@@ -285,12 +286,13 @@ mapid_t mmap (int fd, void *addr) {
   off_t size = file_length(f);
 
   // TODO: fail if pages already mapped
-  if (data % PGSIZE != 0 || size == 0 || addr == 0 || fd == 0 || fd == 1) {
+  bool page_aligned = (int) addr % PGSIZE != 0;
+  if (page_aligned || size == 0 || addr == 0 || fd == 0 || fd == 1) {
     //FAIL
   }
 
   /* Get current page directory */
-  uint32_t *pd = active_pd();
+  uint32_t *pd = thread_current()->pagedir;
 
   /* Read a page at a time from the file until there is nothing more to read */
   int i = 0;
@@ -299,7 +301,7 @@ mapid_t mmap (int fd, void *addr) {
     /* Allocate a zeroed page to read the file into */
     void *curr_page = palloc_get_page(PAL_USER & PAL_ZERO);
     /* Read the file into the page, tracking the number of bytes read */
-    read += file_read (f, curr_page, page_size);
+    read += file_read (f, curr_page, PGSIZE);
     /* Map the page into virtual memory at the appropriate address */
     pagedir_set_page(pd, addr + i * PGSIZE, curr_page, true);
     ++i;
