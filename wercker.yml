@@ -18,8 +18,9 @@ build:
     #    make -C doc alarmclock.pdf
     #    make -C doc task2_design_doc.pdf
   after-steps:
-    - wantedly/pretty-slack-notify:
-        webhook_url: $SLACK_URL
+    - slack-notifier:
+        url: $SLACK_URL
+        username: wercker_build
 
 dev:
   steps:
@@ -59,5 +60,6 @@ deploy:
         git remote add gitlab git@gitlab-pintos:lab1516_spring/pintos_12.git
         git push gitlab master
   after-steps:
-    - wantedly/pretty-slack-notify:
-        webhook_url: $SLACK_URL
+    - slack-notifier:
+        url: $SLACK_URL
+        username: wercker_deploy
