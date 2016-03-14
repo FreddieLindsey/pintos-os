@@ -276,9 +276,36 @@ void close (int fd) {
   process_remove_fd(fd);
 }
 
-/* Maps an opened file fd to memory, at address addr. */
+/* Maps an opened file fd to memory, at the address addr. */
 mapid_t mmap (int fd, void *addr) {
-  // TODO: map file to memory, put in mapping table, use lock
+  // TODO: put in mapping table, use lock
+
+  /* Get corresponding file and its size */
+  struct file* f = process_get_file(fd);
+  off_t size = file_length(f);
+
+  // TODO: fail if pages already mapped
+  if (data % PGSIZE != 0 || size == 0 || addr == 0 || fd == 0 || fd == 1) {
+    //FAIL
+  }
+
+  /* Get current page directory */
+  uint32_t *pd = active_pd();
+
+  /* Read a page at a time from the file until there is nothing more to read */
+  int i = 0;
+  off_t read = 0;
+  do {
+    /* Allocate a zeroed page to read the file into */
+    void *curr_page = palloc_get_page(PAL_USER & PAL_ZERO);
+    /* Read the file into the page, tracking the number of bytes read */
+    read += file_read (f, curr_page, page_size);
+    /* Map the page into virtual memory at the appropriate address */
+    pagedir_set_page(pd, addr + i * PGSIZE, curr_page, true);
+    ++i;
+  } while (read <= size);
+
+  return NULL; // TODO: replace with mapping table id
 }
 
 /* Unmaps mapped memory. */
