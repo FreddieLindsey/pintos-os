@@ -152,7 +152,7 @@ page_fault (struct intr_frame *f)
 
 
   if(not_present && user) {
-    if (!page_in(fault_addr)) {
+    if (!page_into_memory(fault_addr)) {
       exit(-1);
     }
     return;
