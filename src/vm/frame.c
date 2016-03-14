@@ -46,21 +46,14 @@ struct frame* frame_alloc(struct page *page) {
   exit(-1);
 }
 
-void frame_free(void* page) {
-  if (!page) {
+void frame_free(struct frame *f) {
+  lock_acquire(&frame_table_lock);
+  if (!f) {
     return;
   }
+  free(f);
+  lock_release(&frame_table_lock);
 
-  unsigned f;
-  for(f = 0; f < num_frames; f++) {
-    lock_acquire(&frame_table_lock);
-    if (frame_table[f] && frame_table[f]->page == page) {
-      free(frame_table[f]);
-      lock_release(&frame_table_lock);
-      return;
-    }
-    lock_release(&frame_table_lock);
-  }
 }
 
 void frame_lock (struct page *p) {

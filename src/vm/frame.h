@@ -12,8 +12,8 @@ struct frame {
 };
 
 void frame_init(int num_of_frames);
-struct frame* frame_alloc(struct page* page);
-void frame_free(void* page);
+struct frame* frame_alloc(struct page *page);
+void frame_free(struct frame *f);
 void frame_lock(struct page *p);
 void frame_unlock(struct frame* f);
 

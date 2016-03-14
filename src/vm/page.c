@@ -10,22 +10,27 @@
 
 
 /* Add a mapping from VADDR to page. Fails if mapping already exists. */
-struct page* page_alloc(struct list *page_table, void *addr, bool read_only) {
+struct page* page_alloc(void *addr, bool read_only) {
+  struct thread *t = thread_current();
+  if (&t->page_table == NULL) {
+    return NULL;
+  }
   struct page *p = malloc(sizeof(struct page));
   p->addr = addr;
   p->read_only = read_only;
   p->sector = (block_sector_t) -1;
   p->file = NULL;
-  list_push_back(page_table, &p->elem);
+  list_push_back(&t->page_table, &p->elem);
   return p;
 }
 
 
 /* gets page associated with addr */
-struct page* page_from_addr(struct list *page_table, void *addr) {
+struct page* page_from_addr(void *addr) {
 
+  struct thread *t = thread_current();
   struct list_elem *e;
-  for (e = list_begin(page_table); e != list_end(page_table); e = list_next(e)) {
+  for (e = list_begin(&t->page_table); e != list_end(&t->page_table); e = list_next(e)) {
     struct page* page = list_entry(e, struct page, elem);
 
     /* Found a page associated with addr so return */
@@ -37,8 +42,8 @@ struct page* page_from_addr(struct list *page_table, void *addr) {
 
 }
 
+/* Loads page into memory */
 bool page_in (void *addr) {
-
   struct page *p;
   bool success;
   /* Locate page that faulted in supplemental page table */
@@ -46,7 +51,7 @@ bool page_in (void *addr) {
     return false;
   }
 
-  p = page_from_addr(&thread_current()->page_table, addr);
+  p = page_from_addr(addr);
   if (!p) {
     return false;
   }
@@ -69,11 +74,27 @@ bool page_in (void *addr) {
       memset(p->frame->base, 0, PGSIZE);
     }
   }
-
+  /* Point the page table entry for the faulting virtual address to the frame */
   success = pagedir_set_page (thread_current()->pagedir, p->addr,
                               p->frame->base, !p->read_only);
 
   frame_unlock (p->frame);
-  /* Point the page table entry for the faulting virtual address to the frame */
+  
   return success;
+}
+
+/* destroys current process' page table */
+page_destroy() {
+  struct list *page_table = &thread_current()->page_table;
+  struct list_elem *e;
+
+  for (e = list_begin (page_table); e != list_end (page_table);
+       e = list_next (e)) {
+      struct page *p = list_entry (e, struct page, elem);
+      frame_lock(p);
+      if(p->frame) {
+        frame_free(p->frame);
+      }
+      free(p);
+    }
 }
