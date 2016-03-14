@@ -61,5 +61,21 @@ void frame_free(void* page) {
     }
     lock_release(&frame_table_lock);
   }
+}
 
+void frame_lock (struct page *p) {
+  struct frame *f = p->frame;
+  if (f != NULL)
+    {
+      lock_acquire (&f->lock);
+      if (f != p->frame)
+        {
+          lock_release (&f->lock);
+        }
+    }
+}
+
+void frame_unlock(struct frame* f) {
+  ASSERT(lock_held_by_current_thread(&f->lock))
+  lock_release(&f->lock);
 }

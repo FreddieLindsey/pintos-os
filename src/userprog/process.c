@@ -659,15 +659,11 @@ install_page (void *upage, void *kpage, bool writable)
 {
   struct thread *t = thread_current ();
 
-
-
   /* Verify that there's not already a page at that virtual
      address, then map our page there. */
   bool result = (pagedir_get_page (t->pagedir, upage) == NULL
           && pagedir_set_page (t->pagedir, upage, kpage, writable));
 
-  /* Add to supplemental page table if not already mapped and then successfully mapped */
-  if (result) {
-  }
+
   return result;
 }
