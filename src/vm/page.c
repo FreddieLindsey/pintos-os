@@ -84,7 +84,7 @@ bool page_into_memory (void *addr) {
 }
 
 /* destroys current process' page table */
-void page_destroy() {
+page_destroy() {
   struct list *page_table = &thread_current()->page_table;
   struct list_elem *e;
 
