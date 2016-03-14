@@ -9,22 +9,18 @@ build:
         echo -e "Pintos:\t$(which pintos)"
 
     - script:
-      name: Compiling src/userprog
+      name: Compiling src/vm
       code: |
-        make -C src/userprog -j 16
-    - script:
-      name: Testing src/userprog
-      code: |
-        make -C src/userprog -j 16 check
-    - script:
-      name: Compiling design documents
-      code: |
-        make -C doc alarmclock.pdf
-        make -C doc task2_design_doc.pdf
+        make -C src/vm -j 16
+    #- script:
+    #  name: Compiling design documents
+    #  code: |
+    #    make -C doc alarmclock.pdf
+    #    make -C doc task2_design_doc.pdf
   after-steps:
     - slack-notifier:
-      url: $SLACK_URL
-      username: wercker
+        url: $SLACK_URL
+        username: wercker_build
 
 dev:
   steps:
@@ -33,9 +29,9 @@ dev:
         export PATH="$(pwd)/src/utils:$PATH"
         echo -e "PATH:\t$PATH"
     - script:
-      name: Testing src/userprog
+      name: Testing src/vm
       code: |
-        make -C src/userprog -j 16 check
+        make -C src/vm -j 16 check
 
 deploy:
   steps:
@@ -65,5 +61,5 @@ deploy:
         git push gitlab master
   after-steps:
     - slack-notifier:
-      url: $SLACK_URL
-      username: wercker_deployment
+        url: $SLACK_URL
+        username: wercker_deploy
