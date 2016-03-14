@@ -284,6 +284,7 @@ mapid_t mmap (int fd, void *addr) {
   /* Get corresponding file and its size */
   struct file* f = process_get_file(fd);
   off_t size = file_length(f);
+  int num_pages = size / PGSIZE + 1;
 
   // TODO: fail if pages already mapped
   bool page_aligned = (int) addr % PGSIZE != 0;
@@ -295,17 +296,19 @@ mapid_t mmap (int fd, void *addr) {
   uint32_t *pd = thread_current()->pagedir;
 
   /* Read a page at a time from the file until there is nothing more to read */
-  int i = 0;
+  int i;
   off_t read = 0;
-  do {
+  for (i = 0; i < num_pages; ++i) {
     /* Allocate a zeroed page to read the file into */
     void *curr_page = palloc_get_page(PAL_USER & PAL_ZERO);
     /* Read the file into the page, tracking the number of bytes read */
     read += file_read (f, curr_page, PGSIZE);
     /* Map the page into virtual memory at the appropriate address */
     pagedir_set_page(pd, addr + i * PGSIZE, curr_page, true);
-    ++i;
-  } while (read <= size);
+  }
+  if (read != size) {
+    //ERROR
+  }
 
   return NULL; // TODO: replace with mapping table id
 }
