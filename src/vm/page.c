@@ -43,7 +43,7 @@ struct page* page_from_addr(void *addr) {
 }
 
 /* Loads page into memory */
-bool page_in (void *addr) {
+bool page_into_memory (void *addr) {
   struct page *p;
   bool success;
   /* Locate page that faulted in supplemental page table */
@@ -79,12 +79,12 @@ bool page_in (void *addr) {
                               p->frame->base, !p->read_only);
 
   frame_unlock (p->frame);
-  
+
   return success;
 }
 
 /* destroys current process' page table */
-page_destroy() {
+void page_destroy() {
   struct list *page_table = &thread_current()->page_table;
   struct list_elem *e;
 
