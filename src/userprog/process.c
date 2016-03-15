@@ -603,7 +603,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       if (!page) {
         return false;
       }
-      
+
       page->file = file;
       page->file_offset = ofs;
       page->read_bytes = page_read_bytes;
@@ -662,9 +662,8 @@ install_page (void *upage, void *kpage, bool writable)
 
   /* Verify that there's not already a page at that virtual
      address, then map our page there. */
-  bool result = (pagedir_get_page (t->pagedir, upage) == NULL
+  return (pagedir_get_page (t->pagedir, upage) == NULL
           && pagedir_set_page (t->pagedir, upage, kpage, writable));
 
 
-  return result;
 }
