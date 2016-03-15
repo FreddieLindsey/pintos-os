@@ -44,15 +44,15 @@ struct frame* frame_alloc(struct page *page) {
 
   // Will contain eviction code
   exit(-1);
+  return NULL;
 }
 
 void frame_free(struct frame *f) {
-  lock_acquire(&frame_table_lock);
   if (!f) {
     return;
   }
+  lock_release(&f->lock);
   free(f);
-  lock_release(&frame_table_lock);
 
 }
 

@@ -44,6 +44,7 @@ struct page* page_from_addr(void *addr) {
 
 /* Loads page into memory */
 bool page_into_memory (void *addr) {
+  printf("Sup\n");
   struct page *p;
   bool success;
   /* Locate page that faulted in supplemental page table */
@@ -88,13 +89,14 @@ void page_destroy() {
   struct list *page_table = &thread_current()->page_table;
   struct list_elem *e;
 
-  for (e = list_begin (page_table); e != list_end (page_table);
-       e = list_next (e)) {
+  while(!list_empty(page_table)){
+      e = list_pop_front(page_table);
       struct page *p = list_entry (e, struct page, elem);
       frame_lock(p);
       if(p->frame) {
         frame_free(p->frame);
       }
       free(p);
-    }
+  }
+
 }
