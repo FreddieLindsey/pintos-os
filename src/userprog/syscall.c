@@ -289,11 +289,14 @@ mapid_t mmap (int fd, void *addr) {
   // TODO: fail if pages already mapped
   bool page_aligned = (int) addr % PGSIZE != 0;
   if (page_aligned || size == 0 || addr == 0 || fd == 0 || fd == 1) {
-    return -1;
+    return MAP_FAILED;
   }
 
-  /* Get current page directory */
+  /* Get current process's page table */
   uint32_t *pd = thread_current()->pagedir;
+  if (!pd) {
+    return MAP_FAILED;
+  }
 
   /* Read a page at a time from the file until there is nothing more to read */
   int i;
@@ -306,16 +309,31 @@ mapid_t mmap (int fd, void *addr) {
     /* Map the page into virtual memory at the appropriate address */
     pagedir_set_page(pd, addr + i * PGSIZE, curr_page, true);
   }
+  /* File not fully read */
   if (read != size) {
-    return -1;
+    return MAP_FAILED;
   }
 
-  return NULL; // TODO: replace with mapping table id
+  // TODO: as far as I am aware we only need to store the address and not the
+  // fd as well, if we need to store the fd then we need to do more stuff with
+  // memory, since we'll need to allocate for structs in the array
+  return insert_mapping(thread_current()->filemap, addr);
 }
 
 /* Unmaps mapped memory. */
 void munmap (mapid_t map) {
   // TODO: free memory, remove from mapping table, use lock
+}
+
+/* Inserts the new mapping into the first available slot in the filemap,
+   returning the index into which it is mapped as a mapid_t */
+mapid_t insert_mapping(void **filemap, void *addr) {
+  int i = 0;
+  while (!filemap[i]) {
+    ++i;
+  }
+  filemap[i] = addr;
+  return (mapid_t) i;
 }
 
 void check_valid_ptr(void* ptr) {

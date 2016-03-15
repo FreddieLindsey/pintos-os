@@ -6,7 +6,6 @@
 #include <stdint.h>
 #include "synch.h"
 
-
 /* States in a thread's life cycle. */
 enum thread_status
   {
@@ -113,14 +112,15 @@ struct thread
     /* Owned by userprog/process.c. */
     uint32_t *pagedir;                  /* Page directory. */
     struct list page_table;              /* Supplemental page table */
+    void **filemap;                     /* File mapping array */
     int process_init;                   /* Process initiated */
     char* proc_name;
     struct list fd_list;
     struct file* file;                  /* Executable associated file */
     struct semaphore exec_sema;         /* Controls sync in exec */
     struct semaphore wait_sema;
-    struct thread* parent;               /* Parent process */
     void *process_esp;
+    struct thread* parent;              /* Parent process */
 #endif
 
     /* Owned by thread.c. */
@@ -130,14 +130,14 @@ struct thread
 /* This is the struct describing a priority element in the priority
    stack in threads */
 struct priority_elem {
-  int priority;                        /* Actual priority value */
-  struct lock *lock;                   /* Lock for which needed to be acquired */
-  struct thread* t;                     /* Thread which received the donation */
+  int priority;                         /* Actual priority value */
+  struct lock *lock;                    /* Lock which needs to be acquired */
+  struct thread* t;                     /* Thread who received the donation */
   struct list_elem elem;
 };
 
 struct tid_elem {
-  tid_t tid;                         /* tid of thread */
+  tid_t tid;                            /* tid of thread */
   struct list_elem elem;
 };
 
