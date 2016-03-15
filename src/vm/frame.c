@@ -1,6 +1,7 @@
 #include "vm/frame.h"
 #include "threads/malloc.h"
 #include "userprog/syscall.h"
+#include "threads/palloc.h"
 
 
 static struct frame **frame_table;
@@ -34,6 +35,7 @@ struct frame* frame_alloc(struct page *page) {
       struct frame *frame = malloc(sizeof(struct frame));
       frame->page = page;
       frame->pid = thread_current()->tid;
+      frame->base = palloc_get_page(PAL_USER | PAL_ZERO);
       lock_init(&frame->lock);
       lock_acquire(&frame->lock);
       lock_release(&frame_table_lock);

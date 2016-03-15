@@ -599,42 +599,14 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       size_t page_read_bytes = read_bytes < PGSIZE ? read_bytes : PGSIZE;
       size_t page_zero_bytes = PGSIZE - page_read_bytes;
 
-      /* Get a page of memory. */
-      uint8_t *kpage = palloc_get_page (PAL_USER);
-      if (kpage == NULL)
-        return false;
-
       struct page *page = page_alloc(upage, !writable);
       if (!page) {
         return false;
       }
-
-      page->frame = frame_alloc(page);
-      if (!page->frame) {
-        return false;
-      }
+      
       page->file = file;
       page->file_offset = ofs;
       page->read_bytes = page_read_bytes;
-
-      page->frame->base = kpage;
-      frame_unlock(page->frame);
-
-      /* Load this page. */
-      if (file_read (file, kpage, page_read_bytes) != (int) page_read_bytes)
-        {
-          palloc_free_page (kpage);
-          return false;
-        }
-      memset (kpage + page_read_bytes, 0, page_zero_bytes);
-
-      /* Add the page to the process's address space. */
-      if (!install_page (upage, kpage, writable))
-        {
-          palloc_free_page (kpage);
-          return false;
-        }
-
 
       /* Advance. */
       read_bytes -= page_read_bytes;

@@ -153,18 +153,11 @@ page_fault (struct intr_frame *f)
   if(not_present && user) {
     if (!page_into_memory(fault_addr)) {
       exit(-1);
+    } else {
+      return;
     }
-    return;
   }
 
+  exit(-1);
 
-  /* To implement virtual memory, delete the rest of the function
-     body, and replace it with code that brings in the page to
-     which fault_addr refers. */
-  printf ("Page fault at %p: %s error %s page in %s context.\n",
-          fault_addr,
-          not_present ? "not present" : "rights violation",
-          write ? "writing" : "reading",
-          user ? "user" : "kernel");
-  kill (f);
 }

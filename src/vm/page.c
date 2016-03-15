@@ -8,7 +8,6 @@
 #include "userprog/pagedir.h"
 #include "threads/vaddr.h"
 
-
 struct page* try_page_from_addr(void *addr);
 
 /* Add a mapping from VADDR to page. Fails if mapping already exists. */
@@ -17,11 +16,14 @@ struct page* page_alloc(void *addr, bool read_only) {
   if (&t->page_table == NULL) {
     return NULL;
   }
+
+  addr = pg_round_down(addr);
   struct page *p = malloc(sizeof(struct page));
   p->addr = addr;
   p->read_only = read_only;
   p->sector = (block_sector_t) -1;
   p->file = NULL;
+  p->frame = NULL;
 
   /* return NULL if page already exists associated with address */
   if (try_page_from_addr(addr)) {
@@ -35,7 +37,7 @@ struct page* page_alloc(void *addr, bool read_only) {
 
 /* gets page associated with addr, otherwise stack might be empty so try allocate */
 struct page* page_from_addr(void *addr) {
-  struct page* page = try_page_from_addr(addr);
+  struct page* page = try_page_from_addr(pg_round_down(addr));
   return page;
 }
 
@@ -59,6 +61,9 @@ struct page* try_page_from_addr(void *addr) {
 bool page_into_memory (void *addr) {
   struct page *p;
   bool success;
+
+  addr = pg_round_down(addr);
+
   /* Locate page that faulted in supplemental page table */
   if (&thread_current()->page_table == NULL) {
     return false;
@@ -70,23 +75,26 @@ bool page_into_memory (void *addr) {
   }
 
   frame_lock(p);
+
   if (p->frame == NULL) {
     /* Obtain a frame */
-    frame_alloc(p);
-    if (p->sector != (block_sector_t) -1) {
+    p->frame = frame_alloc(p);
+  }
+
+  if (p->sector != (block_sector_t) -1) {
        /* read from swap */
        //swap_free(p);
-    } else if (p->file != NULL) {
+  } else if (p->file != NULL) {
       /* read from file */
-      off_t read_bytes = file_read_at(p->file, p->frame->base, p->file_offset, p->read_bytes);
+      off_t read_bytes = file_read_at(p->file, p->frame->base,  p->read_bytes, p->file_offset);
       off_t zero_bytes = PGSIZE - read_bytes;
       /* sets rest of frame to 0 */
       memset(p->frame->base + read_bytes, 0, zero_bytes);
-    } else {
+  } else {
       /* zero page */
       memset(p->frame->base, 0, PGSIZE);
-    }
   }
+
   /* Point the page table entry for the faulting virtual address to the frame */
   success = pagedir_set_page (thread_current()->pagedir, p->addr,
                               p->frame->base, !p->read_only);
