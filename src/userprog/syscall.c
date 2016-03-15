@@ -289,7 +289,7 @@ mapid_t mmap (int fd, void *addr) {
   // TODO: fail if pages already mapped
   bool page_aligned = (int) addr % PGSIZE != 0;
   if (page_aligned || size == 0 || addr == 0 || fd == 0 || fd == 1) {
-    //FAIL
+    return -1;
   }
 
   /* Get current page directory */
@@ -307,7 +307,7 @@ mapid_t mmap (int fd, void *addr) {
     pagedir_set_page(pd, addr + i * PGSIZE, curr_page, true);
   }
   if (read != size) {
-    //ERROR
+    return -1;
   }
 
   return NULL; // TODO: replace with mapping table id
