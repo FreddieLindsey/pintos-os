@@ -807,6 +807,9 @@ void free_fd_list(struct list *l) {
   while (!list_empty(l)) {
     struct list_elem *e = list_pop_front(l);
     struct fd_elem *f =  list_entry(e, struct fd_elem, elem);
+    try_acquire_filesys();
+    file_close(f->file);
+    try_release_filesys();
     free(f);
   }
 }

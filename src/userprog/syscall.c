@@ -132,10 +132,10 @@ void halt (void) {
 
 void exit (int status) {
   /* Tries to exit, but needs to wait for parent to call wait*/
-  sema_down(&thread_current()->parent->wait_sema);
   thread_current()->exit_status = status;
   printf ("%s: exit(%d)\n", thread_current()->proc_name, status);
   process_exit();
+  sema_down(&thread_current()->parent->wait_sema);
   thread_yield();
   thread_exit();
 }
@@ -150,10 +150,13 @@ pid_t exec (const char *file_name) {
   arg = strtok_r(file_name_copy, " ", &save_ptr);
 
   pid_t pid = -1;
-  if (filesys_open(arg)) {
+  struct file* file = filesys_open(arg);
+  if (file) {
+    file_close(file);
     pid = process_execute(file_name);
   }
-  return pid;
+
+    return pid;
 }
 
 int wait (pid_t pid) {
@@ -198,7 +201,7 @@ int open (const char *file) {
   struct file *f = filesys_open(file);
 
   /* If the file could not be opened, return -1 */
-  if (f == NULL) {
+  if (!f) {
     return -1;
   }
   /* Adds file to file descriptor table */
