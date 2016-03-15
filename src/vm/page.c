@@ -8,6 +8,8 @@
 #include "userprog/pagedir.h"
 #include "threads/vaddr.h"
 
+#define MAX_STACK 8 * 1024 * 1024 /* maximum stack size (8MB) */
+
 struct page* try_page_from_addr(void *addr);
 
 /* Add a mapping from VADDR to page. Fails if mapping already exists. */
@@ -38,6 +40,11 @@ struct page* page_alloc(void *addr, bool read_only) {
 /* gets page associated with addr, otherwise stack might be empty so try allocate */
 struct page* page_from_addr(void *addr) {
   struct page* page = try_page_from_addr(pg_round_down(addr));
+  if (!page) {
+    if (addr >= PHYS_BASE - MAX_STACK) {
+      page = page_alloc(addr, false);
+    }
+  }
   return page;
 }
 
