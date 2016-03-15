@@ -26,6 +26,6 @@ struct page {
 struct page* page_alloc(void *addr, bool read_only);
 struct page* page_from_addr(void *addr);
 bool page_into_memory (void *addr);
-void page_exit(void);
+void page_destroy(void);
 
 #endif
