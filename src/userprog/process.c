@@ -604,6 +604,21 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
       if (kpage == NULL)
         return false;
 
+      struct page *page = page_alloc(upage, !writable);
+      if (!page) {
+        return false;
+      }
+
+      page->frame = frame_alloc(page);
+      if (!page->frame) {
+        return false;
+      }
+      page->file = file;
+      page->file_offset = ofs;
+      page->read_bytes = page_read_bytes;
+
+      page->frame->base = kpage;
+      frame_unlock(page->frame);
 
       /* Load this page. */
       if (file_read (file, kpage, page_read_bytes) != (int) page_read_bytes)
@@ -620,9 +635,11 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
           return false;
         }
 
+
       /* Advance. */
       read_bytes -= page_read_bytes;
       zero_bytes -= page_zero_bytes;
+      ofs += page_read_bytes;
       upage += PGSIZE;
     }
   return true;

@@ -44,7 +44,6 @@ struct page* page_from_addr(void *addr) {
 
 /* Loads page into memory */
 bool page_into_memory (void *addr) {
-  printf("Sup\n");
   struct page *p;
   bool success;
   /* Locate page that faulted in supplemental page table */
