@@ -8,10 +8,6 @@
 #include "userprog/pagedir.h"
 #include "threads/vaddr.h"
 
-#define MAX_STACK 8 * 1024 * 1024 /* maximum stack size (8MB) */
-
-struct page* try_page_from_addr(void *addr);
-
 /* Add a mapping from VADDR to page. Fails if mapping already exists. */
 struct page* page_alloc(void *addr, bool read_only) {
   struct thread *t = thread_current();
@@ -28,7 +24,7 @@ struct page* page_alloc(void *addr, bool read_only) {
   p->frame = NULL;
 
   /* return NULL if page already exists associated with address */
-  if (try_page_from_addr(addr)) {
+  if (page_from_addr(addr)) {
     free(p);
     return NULL;
   }
@@ -36,22 +32,11 @@ struct page* page_alloc(void *addr, bool read_only) {
   return p;
 }
 
-
-/* gets page associated with addr, otherwise stack might be empty so try allocate */
-struct page* page_from_addr(void *addr) {
-  struct page* page = try_page_from_addr(pg_round_down(addr));
-  if (!page) {
-    if (addr >= PHYS_BASE - MAX_STACK) {
-      page = page_alloc(addr, false);
-    }
-  }
-  return page;
-}
-
 /* tries to get page associated with addr, otherwise returns NULL */
-struct page* try_page_from_addr(void *addr) {
+struct page* page_from_addr(void *addr) {
   struct thread *t = thread_current();
   struct list_elem *e;
+  addr = pg_round_down(addr);
   for (e = list_begin(&t->page_table); e != list_end(&t->page_table); e = list_next(e)) {
     struct page* page = list_entry(e, struct page, elem);
 
