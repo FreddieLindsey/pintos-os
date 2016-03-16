@@ -16,6 +16,8 @@
 struct lock filesys_lock;
 
 static void syscall_handler (struct intr_frame *);
+static mapid_t insert_mapping(struct list *filemap, int fd, 
+                       void *addr, int num_pages);
 void read_args(void* esp, int num, void** args);
 void check_valid_ptr(void* ptr);
 
@@ -315,7 +317,7 @@ mapid_t mmap (int fd, void *addr) {
   // TODO: as far as I am aware we only need to store the address and not the
   // fd as well, if we need to store the fd then we need to do more stuff with
   // memory, since we'll need to allocate for structs in the array
-  return insert_mapping(&thread_current()->filemap, addr, num_pages);
+  return insert_mapping(&thread_current()->filemap, fd, addr, num_pages);
 }
 
 /* Unmaps mapped memory. */
@@ -356,7 +358,7 @@ void munmap (mapid_t map) {
 //TODO: prototype
 /* Inserts the new mapping into the first available slot in the filemap,
    returning the index into which it is mapped as a mapid_t */
-mapid_t insert_mapping(struct list *filemap, int fd, 
+static mapid_t insert_mapping(struct list *filemap, int fd, 
                        void *addr, int num_pages) {
   /* Get the last element in the filemap */
   //TODO: check pointer types
