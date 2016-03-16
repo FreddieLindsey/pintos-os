@@ -315,21 +315,55 @@ mapid_t mmap (int fd, void *addr) {
   // TODO: as far as I am aware we only need to store the address and not the
   // fd as well, if we need to store the fd then we need to do more stuff with
   // memory, since we'll need to allocate for structs in the array
-  return insert_mapping(thread_current()->filemap, addr);
+  return insert_mapping(&thread_current()->filemap, addr, num_pages);
 }
 
 /* Unmaps mapped memory. */
 void munmap (mapid_t map) {
-  // TODO: free memory, remove from mapping table, use lock
+  struct thread *t = thread_current();
+  struct list_elem *e;
+  struct filemap_elem *mapping = NULL;
+  for (e = list_begin (&t->filemap); e != list_end (&t->filemap);) {
+    struct filemap_elem *fm = list_entry (e, struct filemap_elem, elem);
+    if (fm->id == map) {
+      mapping = fm;
+      break;
+    }
+  }
+  /* Mapping not found in the file map table */
+  if (mapping == NULL) {
+    return;
+  }
+  /* Get current process's page table */
+  uint32_t *pd = thread_current()->pagedir;
+  if (!pd) {
+    return;
+  }
+  //TODO: write the mapped file back to the original file
+  int i;
+  for (i = 0; i < mapping->num_pages; ++i) {
+    /* Get the kernal virtual address of the mapped file's address */
+    void *kaddr = pagedir_get_page(pd, mapping->addr + i * PGSIZE);
+    /* Free the page */
+    palloc_free_page(kaddr);
+    /* Clear the address mapping in the page directory */
+    pagedir_clear_page(pd, mapping->addr + i * PGSIZE);
+  }
+  /* Free the list element */
+  free(mapping);
 }
 
+//TODO: prototype
 /* Inserts the new mapping into the first available slot in the filemap,
    returning the index into which it is mapped as a mapid_t */
-mapid_t insert_mapping(struct list *filemap, int fd, void *addr) {
+mapid_t insert_mapping(struct list *filemap, int fd, 
+                       void *addr, int num_pages) {
   /* Get the last element in the filemap */
+  //TODO: check pointer types
   struct filemap_elem *back = list_rbegin(filemap);
   mapid_t id = 0;
   /* Set new map ID */
+  //TODO: check pointer types
   if (list_head(filemap) != back) {
     id = back->id + 1;
   }
@@ -340,6 +374,7 @@ mapid_t insert_mapping(struct list *filemap, int fd, void *addr) {
   mapping->id = id;
   mapping->fd = fd;
   mapping->addr = addr;
+  mapping->num_pages = num_pages;
   list_push_back(filemap, &mapping->elem);
   return id;
 }

@@ -151,6 +151,7 @@ struct filemap_elem {
   mapid_t id;
   int fd;
   void *addr;
+  int num_pages;
   struct list_elem elem;
 };
 
