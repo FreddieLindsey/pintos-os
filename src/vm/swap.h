@@ -2,6 +2,7 @@
 #define SWAP_H
 
 #include "devices/block.h"
+#include "page.h"
 #include <list.h>
 
 struct swap {

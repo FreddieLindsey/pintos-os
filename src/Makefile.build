@@ -62,7 +62,6 @@ userprog_SRC += userprog/gdt.c		# GDT initialization.
 userprog_SRC += userprog/tss.c		# TSS management.
 
 # virtual memory code yet.
-<<<<<<< e33646f994a9cf56f0b1cc47b39af9f91b1b550a
 vm_SRC = vm/frame.c			# frame table
 vm_SRC += vm/page.c     # supplemental page table
 vm_SRC += vm/swap.c     # Swap table
