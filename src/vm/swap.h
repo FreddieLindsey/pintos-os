@@ -2,6 +2,7 @@
 #define SWAP_H
 
 #include "devices/block.h"
+#include <list.h>
 
 struct swap {
   struct page *page;       /* evicted page */
