@@ -135,8 +135,8 @@ main (void)
 #endif
 
 #ifdef VM
-  swap_init();
   frame_init(init_ram_pages);
+  swap_init();
 #endif
 
   printf ("Boot complete.\n");
