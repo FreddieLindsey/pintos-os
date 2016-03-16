@@ -4,10 +4,6 @@
 #include <stdbool.h>
 #include "userprog/process.h"
 
-/* Map region identifier. */
-typedef int mapid_t;
-#define MAP_FAILED ((mapid_t) -1)
-
 void syscall_init (void);
 
 /* pid_t should be defined appropriately (for exec and wait) */

@@ -20,6 +20,10 @@ enum thread_status
 typedef int tid_t;
 #define TID_ERROR ((tid_t) -1)          /* Error value for tid_t. */
 
+/* Map region identifier. */
+typedef int mapid_t;
+#define MAP_FAILED ((mapid_t) -1)
+
 /* Thread priorities. */
 #define PRI_MIN 0                       /* Lowest priority. */
 #define PRI_DEFAULT 31                  /* Default priority. */
@@ -112,7 +116,7 @@ struct thread
     /* Owned by userprog/process.c. */
     uint32_t *pagedir;                  /* Page directory. */
     struct list page_table;              /* Supplemental page table */
-    void **filemap;                     /* File mapping array */
+    struct list filemap;                /* File mapping array */
     int process_init;                   /* Process initiated */
     char* proc_name;
     struct list fd_list;
@@ -138,6 +142,15 @@ struct priority_elem {
 
 struct tid_elem {
   tid_t tid;                            /* tid of thread */
+  struct list_elem elem;
+};
+
+/* List element for mapping files into virtual addresses */
+// TODO: do we need all of these members: is fd used?
+struct filemap_elem {
+  mapid_t id;
+  int fd;
+  void *addr;
   struct list_elem elem;
 };
 

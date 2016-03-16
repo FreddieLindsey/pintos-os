@@ -279,8 +279,6 @@ void close (int fd) {
 
 /* Maps an opened file fd to memory, at the address addr. */
 mapid_t mmap (int fd, void *addr) {
-  // TODO: put in mapping table, use lock
-
   /* Get corresponding file and its size */
   struct file* f = process_get_file(fd);
   off_t size = file_length(f);
@@ -327,13 +325,23 @@ void munmap (mapid_t map) {
 
 /* Inserts the new mapping into the first available slot in the filemap,
    returning the index into which it is mapped as a mapid_t */
-mapid_t insert_mapping(void **filemap, void *addr) {
-  int i = 0;
-  while (!filemap[i]) {
-    ++i;
+mapid_t insert_mapping(struct list *filemap, int fd, void *addr) {
+  /* Get the last element in the filemap */
+  struct filemap_elem *back = list_rbegin(filemap);
+  mapid_t id = 0;
+  /* Set new map ID */
+  if (list_head(filemap) != back) {
+    id = back->id + 1;
   }
-  filemap[i] = addr;
-  return (mapid_t) i;
+  // TODO: Someone check this pls because I am bad at pointers and malloc.
+  // Also I'm not sure whether I need to do something with list_elem or if this
+  // works as it is
+  struct filemap_elem *mapping = malloc(sizeof(struct filemap_elem));
+  mapping->id = id;
+  mapping->fd = fd;
+  mapping->addr = addr;
+  list_push_back(filemap, &mapping->elem);
+  return id;
 }
 
 void check_valid_ptr(void* ptr) {
