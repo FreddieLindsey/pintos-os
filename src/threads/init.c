@@ -39,6 +39,7 @@
 #endif
 #ifdef VM
 #include "vm/frame.h"
+#include "vm/swap.h"
 #endif
 
 
@@ -135,6 +136,7 @@ main (void)
 
 #ifdef VM
   frame_init(init_ram_pages);
+  swap_init();
 #endif
 
   printf ("Boot complete.\n");

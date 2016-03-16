@@ -22,6 +22,7 @@ void swap_init() {
   list_init(&swap_table);
 }
 
+/* Allocates and locks a page to an offset in the swap space */
 void swap_alloc(struct page *page) {
   size_t offset;
 
@@ -53,6 +54,30 @@ void swap_alloc(struct page *page) {
   bitmap_set (used_slots, offset, true);
 }
 
+/* Frees the page from swap table and copies it in the frame table */
  void swap_free(struct page *page) {
+   /* identify table entry */
+   struct list_elem *e;
+   struct swap *swap_entry;
+   for (e = list_begin(&swap_table); e != list_end (&swap_table);
+        e = list_next (e))
+        {
+          swap_entry = list_entry (e, struct swap, elem);
+          if (swap_entry->page == page) {
+            break;
+          }
+        }
+   /* if page not found it breaks */
+   if (!swap_entry) {
+     return; // BREAK HARD
+   }
 
+   /* copy back to frame table */
+   frame_alloc(swap_entry->page);
+
+   /* clear used_slots */
+   bitmap_set(used_slots, swap_entry->slot, false);
+
+   /* remove node from table */
+   list_remove(&swap_entry->elem);
  }
