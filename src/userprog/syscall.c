@@ -212,7 +212,9 @@ int filesize (int fd) {
 
 int read (int fd, void *buffer, unsigned length) {
 
-  check_valid_ptr(buffer);
+  if (!buffer ||!is_user_vaddr(buffer)) {
+    exit(-1);
+  }
 
   if (fd == STDIN_FILENO) {
     input_getc();
