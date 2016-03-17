@@ -314,9 +314,6 @@ mapid_t mmap (int fd, void *addr) {
     return MAP_FAILED;
   }
 
-  // TODO: as far as I am aware we only need to store the address and not the
-  // fd as well, if we need to store the fd then we need to do more stuff with
-  // memory, since we'll need to allocate for structs in the array
   return insert_mapping(&thread_current()->filemap, fd, addr, num_pages);
 }
 
@@ -351,11 +348,11 @@ void munmap (mapid_t map) {
     /* Clear the address mapping in the page directory */
     pagedir_clear_page(pd, mapping->addr + i * PGSIZE);
   }
-  /* Free the list element */
+  /* Remove the list element */
+  list_remove(&mapping->elem);
   free(mapping);
 }
 
-//TODO: prototype
 /* Inserts the new mapping into the first available slot in the filemap,
    returning the index into which it is mapped as a mapid_t */
 static mapid_t insert_mapping(struct list *filemap, int fd, 
