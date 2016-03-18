@@ -32,6 +32,7 @@ syscall_handler (struct intr_frame *f)
   check_valid_ptr(f->esp);
   /* Read the number of the system call */
   int syscall_num = *(int*)(f->esp);
+  thread_current()->process_esp = f->esp;
   /* array which holds the arguments of the system call */
   /* also passes to the appropriate function */
   void* args[MAX_ARGS];

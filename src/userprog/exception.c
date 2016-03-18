@@ -151,13 +151,17 @@ page_fault (struct intr_frame *f)
   write = (f->error_code & PF_W) != 0;
   user = (f->error_code & PF_U) != 0;
 
-  if(user && not_present) {
 
-    if (fault_addr >= PHYS_BASE - MAX_STACK && fault_addr >= f->esp - 32) {
+  if(not_present) {
+    /* If user access, then update process_esp to f->esp. Otherwise, it's a kernel access so ignore */
+    if (user) {
+      thread_current()->process_esp = f->esp;
+    }
+    
+    if (fault_addr >= PHYS_BASE - MAX_STACK && fault_addr >= thread_current()->process_esp - 32) {
       page_alloc(fault_addr, false);
     }
 
-    thread_current()->process_esp = f->esp;
     if (!page_into_memory(fault_addr)) {
       exit(-1);
     }
