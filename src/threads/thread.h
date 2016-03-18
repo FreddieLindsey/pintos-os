@@ -146,7 +146,6 @@ struct tid_elem {
 };
 
 /* List element for mapping files into virtual addresses */
-// TODO: do we need all of these members: is fd used?
 struct filemap_elem {
   mapid_t id;
   int fd;

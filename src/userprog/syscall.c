@@ -279,10 +279,12 @@ void close (int fd) {
   process_remove_fd(fd);
 }
 
+//TODO: can someone check what I've done is okay in terms of reading from the 
+//file system, regarding locks etc.
 /* Maps an opened file fd to memory, at the address addr. */
 mapid_t mmap (int fd, void *addr) {
   /* Get corresponding file and its size */
-  struct file* f = process_get_file(fd);
+  struct file *f = process_get_file(fd);
   off_t size = file_length(f);
   int num_pages = size / PGSIZE + 1;
 
@@ -309,6 +311,7 @@ mapid_t mmap (int fd, void *addr) {
     /* Map the page into virtual memory at the appropriate address */
     pagedir_set_page(pd, addr + i * PGSIZE, curr_page, true);
   }
+
   /* File not fully read */
   if (read != size) {
     return MAP_FAILED;
@@ -319,6 +322,7 @@ mapid_t mmap (int fd, void *addr) {
 
 /* Unmaps mapped memory. */
 void munmap (mapid_t map) {
+  /* Find the mapping in the file map table */
   struct thread *t = thread_current();
   struct list_elem *e;
   struct filemap_elem *mapping = NULL;
@@ -333,22 +337,32 @@ void munmap (mapid_t map) {
   if (mapping == NULL) {
     return;
   }
+
   /* Get current process's page table */
   uint32_t *pd = thread_current()->pagedir;
   if (!pd) {
     return;
   }
-  //TODO: write the mapped file back to the original file
+  /* Get the file corresponding to the mapping */
+  struct file *f = process_get_file(mapping->fd);
+  /* Write each page back to the file if required, and remove the page and
+     its index in the page directory */
   int i;
   for (i = 0; i < mapping->num_pages; ++i) {
     /* Get the kernal virtual address of the mapped file's address */
     void *kaddr = pagedir_get_page(pd, mapping->addr + i * PGSIZE);
+    /* Write the page back to the file if it has been modified */
+    if (pagedir_is_dirty(pd, mapping->addr + i * PGSIZE)) {
+      try_acquire_filesys();
+      file_write(f, kaddr, PGSIZE);
+      try_release_filesys();
+    }
     /* Free the page */
     palloc_free_page(kaddr);
     /* Clear the address mapping in the page directory */
     pagedir_clear_page(pd, mapping->addr + i * PGSIZE);
   }
-  /* Remove the list element */
+  /* Remove mapping from the file map table */
   list_remove(&mapping->elem);
   free(mapping);
 }
