@@ -234,6 +234,14 @@ process_exit (void)
   pd = cur->pagedir;
   if (pd != NULL)
     {
+      /* Clean up the file map table */
+      struct list_elem *e;
+      for (e = list_begin (&cur->filemap); e != list_end (&cur->filemap);
+           e = list_next (e)) {
+        struct filemap_elem *fm = list_entry (e, struct filemap_elem, elem);
+        munmap(fm->id);
+      }
+
       /* Correct ordering here is crucial.  We must set
          cur->pagedir to NULL before switching page directories,
          so that a timer interrupt can't switch back to the

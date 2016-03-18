@@ -24,6 +24,8 @@ unsigned tell (int fd);
 void close (int fd);
 mapid_t mmap (int fd, void *data);
 void munmap (mapid_t map);
+void try_release_filesys();
+void try_acquire_filesys();
 
 
 #endif /* userprog/syscall.h */

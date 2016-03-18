@@ -307,7 +307,9 @@ mapid_t mmap (int fd, void *addr) {
     /* Allocate a zeroed page to read the file into */
     void *curr_page = palloc_get_page(PAL_USER & PAL_ZERO);
     /* Read the file into the page, tracking the number of bytes read */
+    try_acquire_filesys();
     read += file_read (f, curr_page, PGSIZE);
+    try_release_filesys();
     /* Map the page into virtual memory at the appropriate address */
     pagedir_set_page(pd, addr + i * PGSIZE, curr_page, true);
   }
@@ -372,17 +374,14 @@ void munmap (mapid_t map) {
 static mapid_t insert_mapping(struct list *filemap, int fd, 
                        void *addr, int num_pages) {
   /* Get the last element in the filemap */
-  //TODO: check pointer types
-  struct filemap_elem *back = list_rbegin(filemap);
+  struct list_elem *back = list_rbegin(filemap);
   mapid_t id = 0;
-  /* Set new map ID */
-  //TODO: check pointer types
+  /* Set new map ID based on the last, if the list is not empty */
   if (list_head(filemap) != back) {
-    id = back->id + 1;
+    struct filemap_elem *fm = list_entry (back, struct filemap_elem, elem);
+    id = fm->id + 1;
   }
-  // TODO: Someone check this pls because I am bad at pointers and malloc.
-  // Also I'm not sure whether I need to do something with list_elem or if this
-  // works as it is
+  /* Set up struct members for file mapping */
   struct filemap_elem *mapping = malloc(sizeof(struct filemap_elem));
   mapping->id = id;
   mapping->fd = fd;
