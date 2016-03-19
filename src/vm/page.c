@@ -84,12 +84,17 @@ bool page_into_memory (void *addr) {
   if (p->sector != (block_sector_t) -1) {
        /* read from swap */
 <<<<<<< HEAD
+<<<<<<< HEAD
        swap_free(p);
   } else if (p->file != NULL) {
 =======
        //swap_free(p);
   } else if (p->file) {
 >>>>>>> Basic eviction implemented. Need to debug
+=======
+       swap_free(p);
+  } else if (p->file != NULL) {
+>>>>>>> Fixed swap so that sector field in page is actually set.
       /* read from file */
       off_t read_bytes = file_read_at(p->file, p->frame->base,  p->read_bytes, p->file_offset);
       off_t zero_bytes = PGSIZE - read_bytes;
