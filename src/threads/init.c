@@ -134,7 +134,8 @@ main (void)
 #endif
 
 #ifdef VM
-  frame_init(user_page_limit);
+//user_page_limit
+  frame_init(5);
 #endif
 
   printf ("Boot complete.\n");

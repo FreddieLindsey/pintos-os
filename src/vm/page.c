@@ -22,6 +22,7 @@ struct page* page_alloc(void *addr, bool read_only) {
   p->sector = (block_sector_t) -1;
   p->file = NULL;
   p->frame = NULL;
+  p->thread = thread_current();
 
   /* return NULL if page already exists associated with address */
   if (page_from_addr(addr)) {
@@ -76,7 +77,7 @@ bool page_into_memory (void *addr) {
   if (p->sector != (block_sector_t) -1) {
        /* read from swap */
        //swap_free(p);
-  } else if (p->file != NULL) {
+  } else if (p->file) {
       /* read from file */
       off_t read_bytes = file_read_at(p->file, p->frame->base,  p->read_bytes, p->file_offset);
       off_t zero_bytes = PGSIZE - read_bytes;
@@ -94,6 +95,35 @@ bool page_into_memory (void *addr) {
   frame_unlock (p->frame);
 
   return success;
+}
+
+bool page_out_memory(struct page* page) {
+  ASSERT(page->frame);
+  bool modified;
+  bool success;
+
+  pagedir_clear_page(page->thread->pagedir, page->addr);
+
+  modified = pagedir_is_dirty(page->thread->pagedir, page->addr);
+
+  if(page->file) {
+    if (modified) {
+      success = file_write_at(page->file, page->frame->base, page->read_bytes, page->file_offset) == page->read_bytes;
+    } else {
+      success = true;
+    }
+  } else {
+    //swap_alloc(page);
+    success = true;
+  }
+
+  if (success) {
+    page->frame = NULL;
+  }
+
+  return success;
+
+
 }
 
 /* destroys current process' page table */
