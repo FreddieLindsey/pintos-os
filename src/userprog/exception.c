@@ -157,7 +157,7 @@ page_fault (struct intr_frame *f)
     if (user) {
       thread_current()->process_esp = f->esp;
     }
-    
+
     if (fault_addr >= PHYS_BASE - MAX_STACK && fault_addr >= thread_current()->process_esp - 32) {
       page_alloc(fault_addr, false);
     }

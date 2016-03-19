@@ -13,10 +13,19 @@ static size_t num_frames;
 struct frame* select_frame(void);
 
 void frame_init(int num_of_frames) {
+<<<<<<< HEAD
   num_frames = 0;
   void * base;
 
   frame_table = malloc(sizeof(struct frame*)*num_of_frames);
+=======
+  num_frames = num_of_frames;
+  frame_table = malloc(sizeof(struct frame*)*num_frames);
+  int i;
+  for(i = 0; i < num_frames; i++) {
+    frame_table[i] = NULL;
+  }
+>>>>>>> Basic eviction implemented. Need to debug
   if (!frame_table) {
     PANIC ("out of memory to allocated frame table");
   }
@@ -52,8 +61,10 @@ struct frame* frame_alloc(struct page *page) {
 
   /* Select frame to evict */
   struct frame* frame = select_frame();
+
   /* Attempt to move page from memory */
   if(!page_out_memory(frame->page)) {
+    frame_unlock(frame);
     return NULL;
   }
 
