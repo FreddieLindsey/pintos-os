@@ -79,7 +79,13 @@ void swap_alloc(struct page *page) {
    }
 
    /* copy back to frame table */
-   frame_alloc(swap_entry->page);
+   uint32_t i;
+   for (i = 0; i < n_page_sectors; i++ ) {
+     block_read(swap_space,
+                swap_entry->slot + i,
+                page->frame->base + i * BLOCK_SECTOR_SIZE);
+   }
+   page_into_memory(page->frame->base);
 
    /* clear used_slots */
    lock_acquire(&swap_table_lock);
