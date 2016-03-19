@@ -32,6 +32,9 @@ syscall_handler (struct intr_frame *f)
   check_valid_ptr(f->esp);
   /* Read the number of the system call */
   int syscall_num = *(int*)(f->esp);
+  /* update esp of process to esp on frame. Used for
+     checking stack operations in kernel page faults  */
+  thread_current()->process_esp = f->esp;
   /* array which holds the arguments of the system call */
   /* also passes to the appropriate function */
   void* args[MAX_ARGS];
@@ -142,7 +145,7 @@ void exit (int status) {
 
 pid_t exec (const char *file_name) {
   check_valid_ptr(file_name);
-  
+
   char *arg, *save_ptr;
   int str_len = strlen(file_name) + 1;
   char file_name_copy[str_len];
@@ -212,7 +215,10 @@ int filesize (int fd) {
 
 int read (int fd, void *buffer, unsigned length) {
 
-  check_valid_ptr(buffer);
+  /* Checks if buffer is in user memory */
+  if (!buffer ||!is_user_vaddr(buffer)) {
+    exit(-1);
+  }
 
   if (fd == STDIN_FILENO) {
     input_getc();

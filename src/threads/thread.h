@@ -120,6 +120,7 @@ struct thread
     struct semaphore exec_sema;         /* Controls sync in exec */
     struct semaphore wait_sema;
     struct thread* parent;               /* Parent process */
+    void *process_esp;
 #endif
 
     /* Owned by thread.c. */

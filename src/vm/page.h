@@ -7,6 +7,8 @@
 #include "devices/block.h"
 #include "vm/frame.h"
 
+#define MAX_STACK 8 * 1024 * 1024 /* maximum stack size (8MB) */
+
 struct page {
   void *addr; /* virtual address of page */
   bool read_only;
