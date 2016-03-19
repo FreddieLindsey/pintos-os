@@ -18,7 +18,6 @@ struct page {
   struct frame *frame; /* The frame that is associated with the page */
   struct thread* thread;
 
-
   block_sector_t sector;
 
   struct file *file;
@@ -32,7 +31,11 @@ struct page {
 struct page* page_alloc(void *addr, bool read_only);
 struct page* page_from_addr(void *addr);
 bool page_into_memory (void *addr);
+<<<<<<< HEAD
 bool page_out_memory (struct page* page);
+=======
+bool page_out_memory(struct page* page);
+>>>>>>> Basic eviction implemented. Need to debug
 void page_destroy(void);
 void page_remove(void* addr);
 

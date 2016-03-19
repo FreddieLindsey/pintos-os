@@ -10,9 +10,15 @@ static struct lock frame_table_lock; /* lock for mutual exclusion */
 
 static size_t num_frames;
 
+struct frame* select_frame(void);
+
 void frame_init(int num_of_frames) {
   num_frames = num_of_frames;
   frame_table = malloc(sizeof(struct frame*)*num_frames);
+  int i;
+  for(i = 0; i < num_frames; i++) {
+    frame_table[i] = NULL;
+  }
   if (!frame_table) {
     PANIC ("out of memory to allocated frame table");
   }
@@ -30,9 +36,9 @@ struct frame* frame_alloc(struct page *page) {
   unsigned i;
   lock_acquire(&frame_table_lock);
   for(i = 0; i < num_frames; i++) {
-    struct frame* f = frame_table[i];
-    if (f == NULL) {
-      struct frame *frame = malloc(sizeof(struct frame));
+    struct frame* frame = frame_table[i];
+    if (frame == NULL) {
+      frame = malloc(sizeof(struct frame));
       frame->page = page;
       frame->pid = thread_current()->tid;
       frame->base = palloc_get_page(PAL_USER | PAL_ZERO);
@@ -44,9 +50,22 @@ struct frame* frame_alloc(struct page *page) {
   }
   lock_release(&frame_table_lock);
 
-  // Will contain eviction code
-  exit(-1);
-  return NULL;
+  /* Select frame to evict */
+  struct frame* frame = select_frame();
+
+  /* Attempt to move page from memory */
+  if(!page_out_memory(frame->page)) {
+    frame_unlock(frame);
+    return NULL;
+  }
+
+  frame->page = page;
+  return frame;
+}
+
+
+struct frame* select_frame() {
+  return frame_table[0];
 }
 
 void frame_free(struct frame *f) {
