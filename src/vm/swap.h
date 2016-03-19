@@ -7,7 +7,7 @@
 
 struct swap {
   struct page *page;       /* evicted page */
-  size_t slot;             /* swap slot */
+  block_sector_t slot;             /* swap slot */
   struct list_elem elem;   /* needed for list */
   struct lock lock;        /* lock associated with swap slot */
 
