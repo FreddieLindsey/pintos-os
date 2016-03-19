@@ -20,10 +20,12 @@ void swap_init() {
   n_page_sectors = PGSIZE / BLOCK_SECTOR_SIZE;
   used_slots = bitmap_create(n_slots);
   list_init(&swap_table);
+  lock_init(&swap_table_lock);
 }
 
 /* Allocates and locks a page to an offset in the swap space */
 void swap_alloc(struct page *page) {
+  lock_acquire(&swap_table_lock);
   size_t offset;
 
   /* find the first available slot */
@@ -35,13 +37,19 @@ void swap_alloc(struct page *page) {
 
   /* the swap space has been saturated */
   if (offset == n_slots) {
+    lock_release(&swap_table_lock);
     return; // POSSIBLY BREAK EVERYTHING
   }
+
+  /* update the used_slots bitmap */
+  bitmap_set (used_slots, offset, true);
+  lock_release(&swap_table_lock);
 
   /* set the list */
   struct swap* entry = malloc(sizeof(struct swap));
   entry->page = page;
   entry->slot = offset;
+  lock_init(&entry->lock);
   list_push_back(&swap_table, &entry->elem);
 
   /* write on swap space the page */
@@ -49,9 +57,6 @@ void swap_alloc(struct page *page) {
   for (i = 0; i < n_page_sectors; i++ ) {
     block_write (swap_space, offset + i, page + i * BLOCK_SECTOR_SIZE);
   }
-
-  /* update the used_slots bitmap */
-  bitmap_set (used_slots, offset, true);
 }
 
 /* Frees the page from swap table and copies it in the frame table */
@@ -64,6 +69,7 @@ void swap_alloc(struct page *page) {
         {
           swap_entry = list_entry (e, struct swap, elem);
           if (swap_entry->page == page) {
+            lock_acquire(&swap_entry->lock);
             break;
           }
         }
@@ -76,8 +82,12 @@ void swap_alloc(struct page *page) {
    frame_alloc(swap_entry->page);
 
    /* clear used_slots */
+   lock_acquire(&swap_table_lock);
    bitmap_set(used_slots, swap_entry->slot, false);
+   lock_release(&swap_table_lock);
 
    /* remove node from table */
    list_remove(&swap_entry->elem);
+   lock_release(&swap_entry->lock);
+   free(swap_entry);
  }
