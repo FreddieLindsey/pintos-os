@@ -26,7 +26,7 @@ void swap_init() {
 /* Allocates and locks a page to an offset in the swap space */
 void swap_alloc(struct page *page) {
   lock_acquire(&swap_table_lock);
-  size_t offset;
+  block_sector_t offset;
 
   /* find the first available slot */
   for (offset = 0; offset < n_slots; offset++) {
@@ -48,6 +48,7 @@ void swap_alloc(struct page *page) {
   /* set the list */
   struct swap* entry = malloc(sizeof(struct swap));
   entry->page = page;
+  entry->page->sector = offset;
   entry->slot = offset;
   lock_init(&entry->lock);
   list_push_back(&swap_table, &entry->elem);
@@ -85,7 +86,7 @@ void swap_alloc(struct page *page) {
                 swap_entry->slot + i,
                 page->frame->base + i * BLOCK_SECTOR_SIZE);
    }
-   page_into_memory(page->frame->base);
+   page->sector = (block_sector_t) -1;
 
    /* clear used_slots */
    lock_acquire(&swap_table_lock);

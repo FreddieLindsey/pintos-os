@@ -79,8 +79,8 @@ bool page_into_memory (void *addr) {
 
   if (p->sector != (block_sector_t) -1) {
        /* read from swap */
-       //swap_free(p);
-  } else if (p->file) {
+       swap_free(p);
+  } else if (p->file != NULL) {
       /* read from file */
       off_t read_bytes = file_read_at(p->file, p->frame->base,  p->read_bytes, p->file_offset);
       off_t zero_bytes = PGSIZE - read_bytes;
