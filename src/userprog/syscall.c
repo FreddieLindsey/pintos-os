@@ -279,8 +279,6 @@ void close (int fd) {
   process_remove_fd(fd);
 }
 
-//TODO: can someone check what I've done is okay in terms of reading from the 
-//file system, regarding locks etc.
 /* Maps an opened file fd to memory, at the address addr. */
 mapid_t mmap (int fd, void *addr) {
   /* Get corresponding file and its size */
@@ -289,8 +287,8 @@ mapid_t mmap (int fd, void *addr) {
   int num_pages = size / PGSIZE + 1;
 
   // TODO: fail if pages already mapped
-  bool page_aligned = (int) addr % PGSIZE != 0;
-  if (page_aligned || size == 0 || addr == 0 || fd == 0 || fd == 1) {
+  bool page_aligned = (int) addr % PGSIZE == 0;
+  if (!page_aligned || size == 0 || addr == 0 || fd == 0 || fd == 1) {
     return MAP_FAILED;
   }
 
@@ -311,7 +309,9 @@ mapid_t mmap (int fd, void *addr) {
     read += file_read (f, curr_page, PGSIZE);
     try_release_filesys();
     /* Map the page into virtual memory at the appropriate address */
-    pagedir_set_page(pd, addr + i * PGSIZE, curr_page, true);
+    if (!pagedir_set_page(pd, addr + i * PGSIZE, curr_page, true)) {
+      return MAP_FAILED;
+    }
   }
 
   /* File not fully read */
