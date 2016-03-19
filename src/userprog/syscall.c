@@ -32,6 +32,8 @@ syscall_handler (struct intr_frame *f)
   check_valid_ptr(f->esp);
   /* Read the number of the system call */
   int syscall_num = *(int*)(f->esp);
+  /* update esp of process to esp on frame. Used for
+     checking stack operations in kernel page faults  */
   thread_current()->process_esp = f->esp;
   /* array which holds the arguments of the system call */
   /* also passes to the appropriate function */
@@ -213,6 +215,7 @@ int filesize (int fd) {
 
 int read (int fd, void *buffer, unsigned length) {
 
+  /* Checks if buffer is in user memory */
   if (!buffer ||!is_user_vaddr(buffer)) {
     exit(-1);
   }
