@@ -68,8 +68,6 @@ bool page_into_memory (void *addr) {
     return false;
   }
 
-
-
   if (p->frame == NULL) {
     /* Obtain a frame */
     p->frame = frame_alloc(p);
@@ -96,9 +94,9 @@ bool page_into_memory (void *addr) {
                               p->frame->base, !p->read_only);
 
   frame_unlock(p->frame);
-
   return success;
 }
+
 
 bool page_out_memory(struct page* page) {
   ASSERT(page->frame);
@@ -116,36 +114,7 @@ bool page_out_memory(struct page* page) {
       success = true;
     }
   } else {
-    //swap_alloc(page);
-    success = true;
-  }
-
-  if (success) {
-    page->frame = NULL;
-  }
-
-  return success;
-
-
-}
-
-bool page_out_memory(struct page* page) {
-  ASSERT(page->frame);
-  bool modified;
-  bool success;
-
-  pagedir_clear_page(page->thread->pagedir, page->addr);
-
-  modified = pagedir_is_dirty(page->thread->pagedir, page->addr);
-
-  if(page->file) {
-    if (modified) {
-      success = file_write_at(page->file, page->frame->base, page->read_bytes, page->file_offset) == page->read_bytes;
-    } else {
-      success = true;
-    }
-  } else {
-    //swap_alloc(page);
+    swap_alloc(page);
     success = true;
   }
 

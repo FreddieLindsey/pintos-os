@@ -632,6 +632,7 @@ setup_stack (void **esp)
       if(page->frame) {
         frame_lock(page);
           success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, page->frame->base, true);
+
           if (success)
             *esp = PHYS_BASE - 12;
 
