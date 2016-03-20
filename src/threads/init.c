@@ -145,6 +145,7 @@ main (void)
   run_actions (argv);
 
   /* Finish up. */
+  frame_destroy();
   shutdown ();
   thread_exit ();
 }
