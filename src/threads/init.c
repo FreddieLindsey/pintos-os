@@ -134,7 +134,7 @@ main (void)
 #endif
 
 #ifdef VM
-  frame_init(5);
+  frame_init(init_ram_pages);
 #endif
 
   printf ("Boot complete.\n");

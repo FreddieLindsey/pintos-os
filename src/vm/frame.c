@@ -13,19 +13,19 @@ static size_t num_frames;
 struct frame* select_frame(void);
 
 void frame_init(int num_of_frames) {
-  num_frames = num_of_frames;
-  frame_table = malloc(sizeof(struct frame*)*num_frames);
-  int i;
-  for(i = 0; i < num_frames; i++) {
-    frame_table[i] = malloc(sizeof(struct frame));
-    frame_table[i]->base = palloc_get_page(PAL_USER | PAL_ZERO);
-    palloc_free_page(frame_table[i]->base);
-    frame_table[i]->base = palloc_get_page(PAL_USER | PAL_ZERO);
+  num_frames = 0;
+  void * base;
 
-    frame_table[i]->page = NULL;
-  }
+  frame_table = malloc(sizeof(struct frame*)*num_of_frames);
   if (!frame_table) {
     PANIC ("out of memory to allocated frame table");
+  }
+  while((base = palloc_get_page(PAL_USER | PAL_ZERO))!= NULL) {
+    frame_table[num_frames] = malloc(sizeof(struct frame));
+    frame_table[num_frames]->base = base;
+    frame_table[num_frames]->page = NULL;
+    lock_init(&frame_table[num_frames]->lock);
+    num_frames++;
   }
   lock_init(&frame_table_lock);
 
@@ -44,7 +44,6 @@ struct frame* frame_alloc(struct page *page) {
     if (!frame_table[i]->page) {
       frame_table[i]->page = page;
       frame_table[i]->pid = thread_current()->tid;
-      lock_init(&frame_table[i]->lock);
       lock_release(&frame_table_lock);
       return frame_table[i];
     }
@@ -55,7 +54,6 @@ struct frame* frame_alloc(struct page *page) {
   struct frame* frame = select_frame();
   /* Attempt to move page from memory */
   if(!page_out_memory(frame->page)) {
-    frame_unlock(frame);
     return NULL;
   }
 

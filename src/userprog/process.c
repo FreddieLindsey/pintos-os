@@ -38,7 +38,7 @@ process_execute (const char *file_name)
 
   /* Make a copy of FILE_NAME.
      Otherwise there's a race between the caller and load(). */
-  fn_copy = palloc_get_page (PAL_USER);
+  fn_copy = palloc_get_page (0);
 
   if (fn_copy == NULL)
     return TID_ERROR;
@@ -47,7 +47,7 @@ process_execute (const char *file_name)
   /* Initialise other arguments required and tokenise fn_copy into args. */
   char *token, *save_ptr;
   char **args;
-  args = palloc_get_page (PAL_USER);
+  args = palloc_get_page(0);
   int j = 0;
   for (token = strtok_r(fn_copy, " ", &save_ptr); token != NULL;
       token = strtok_r(NULL, " ", &save_ptr)) {
@@ -622,7 +622,6 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 static bool
 setup_stack (void **esp)
 {
-  uint8_t *kpage;
   bool success = false;
 
   struct page* page = page_alloc(((uint8_t *) PHYS_BASE) - PGSIZE, false);
@@ -632,15 +631,10 @@ setup_stack (void **esp)
       page->frame = frame_alloc(page);
       if(page->frame) {
         frame_lock(page);
-        kpage = palloc_get_page (PAL_USER | PAL_ZERO);
-        if(kpage) {
-          page->frame->base = kpage;
-          success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true);
+          success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, page->frame->base, true);
           if (success)
             *esp = PHYS_BASE - 12;
-          else
-            palloc_free_page (kpage);
-        }
+
         frame_unlock(page->frame);
       }
     }
