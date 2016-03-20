@@ -631,6 +631,7 @@ setup_stack (void **esp)
     {
       page->frame = frame_alloc(page);
       if(page->frame) {
+        frame_lock(page);
         kpage = palloc_get_page (PAL_USER | PAL_ZERO);
         if(kpage) {
           page->frame->base = kpage;

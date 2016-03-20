@@ -36,14 +36,13 @@ struct frame* frame_alloc(struct page *page) {
   unsigned i;
   lock_acquire(&frame_table_lock);
   for(i = 0; i < num_frames; i++) {
-    struct frame* frame = frame_table[i];
-    if (frame == NULL) {
-      frame = malloc(sizeof(struct frame));
+    if (!frame_table[i]) {
+      struct frame* frame = malloc(sizeof(struct frame));
       frame->page = page;
       frame->pid = thread_current()->tid;
       frame->base = palloc_get_page(PAL_USER | PAL_ZERO);
+      frame_table[i] = frame;
       lock_init(&frame->lock);
-      lock_acquire(&frame->lock);
       lock_release(&frame_table_lock);
       return frame;
     }
@@ -52,7 +51,6 @@ struct frame* frame_alloc(struct page *page) {
 
   /* Select frame to evict */
   struct frame* frame = select_frame();
-
   /* Attempt to move page from memory */
   if(!page_out_memory(frame->page)) {
     frame_unlock(frame);
@@ -72,7 +70,7 @@ void frame_free(struct frame *f) {
   if (!f) {
     return;
   }
-  lock_release(&f->lock);
+  palloc_free_page(f->base);
   free(f);
 
 }
