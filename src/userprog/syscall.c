@@ -10,6 +10,7 @@
 #include "threads/vaddr.h"
 #include "threads/malloc.h"
 #include "threads/palloc.h"
+#include "vm/page.h"
 
 #define MAX_ARGS 3
 
@@ -302,16 +303,24 @@ mapid_t mmap (int fd, void *addr) {
   int i;
   off_t read = 0;
   for (i = 0; i < num_pages; ++i) {
-    /* Allocate a zeroed page to read the file into */
-    void *curr_page = palloc_get_page(PAL_USER & PAL_ZERO);
-    /* Read the file into the page, tracking the number of bytes read */
-    try_acquire_filesys();
-    read += file_read (f, curr_page, PGSIZE);
-    try_release_filesys();
-    /* Map the page into virtual memory at the appropriate address */
-    if (!pagedir_set_page(pd, addr + i * PGSIZE, curr_page, true)) {
-      return MAP_FAILED;
+    ///* Allocate a zeroed page to read the file into */
+    //void *curr_page = palloc_get_page(PAL_USER & PAL_ZERO);
+    ///* Read the file into the page, tracking the number of bytes read */
+    //try_acquire_filesys();
+    //read += file_read (f, curr_page, PGSIZE);
+    //try_release_filesys();
+    ///* Map the page into virtual memory at the appropriate address */
+    //if (!pagedir_set_page(pd, addr + i * PGSIZE, curr_page, true)) {
+    //  return MAP_FAILED;
+    //}
+
+    struct page *curr_page = page_alloc(addr + i * PGSIZE, false);
+    if (!curr_page) {
+      printf("null page\n");
     }
+    curr_page->file = f;
+    curr_page->file_offset = i * PGSIZE;
+    curr_page->read_bytes = PGSIZE;
   }
 
   /* File not fully read */
@@ -360,7 +369,7 @@ void munmap (mapid_t map) {
       try_release_filesys();
     }
     /* Free the page */
-    palloc_free_page(kaddr);
+    //palloc_free_page(kaddr);
     /* Clear the address mapping in the page directory */
     pagedir_clear_page(pd, mapping->addr + i * PGSIZE);
   }
