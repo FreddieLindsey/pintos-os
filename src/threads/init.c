@@ -134,7 +134,7 @@ main (void)
 #endif
 
 #ifdef VM
-  frame_init(100);
+  frame_init(5);
 #endif
 
   printf ("Boot complete.\n");
@@ -143,6 +143,7 @@ main (void)
   run_actions (argv);
 
   /* Finish up. */
+  frame_destroy();
   shutdown ();
   thread_exit ();
 }

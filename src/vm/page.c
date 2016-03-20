@@ -135,9 +135,6 @@ void page_destroy() {
   while(!list_empty(page_table)){
       e = list_pop_front(page_table);
       struct page *p = list_entry (e, struct page, elem);
-      if(p->frame) {
-        frame_free(p->frame);
-      }
       free(p);
   }
 

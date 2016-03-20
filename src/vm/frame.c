@@ -17,7 +17,12 @@ void frame_init(int num_of_frames) {
   frame_table = malloc(sizeof(struct frame*)*num_frames);
   int i;
   for(i = 0; i < num_frames; i++) {
-    frame_table[i] = NULL;
+    frame_table[i] = malloc(sizeof(struct frame));
+    frame_table[i]->base = palloc_get_page(PAL_USER | PAL_ZERO);
+    palloc_free_page(frame_table[i]->base);
+    frame_table[i]->base = palloc_get_page(PAL_USER | PAL_ZERO);
+
+    frame_table[i]->page = NULL;
   }
   if (!frame_table) {
     PANIC ("out of memory to allocated frame table");
@@ -36,15 +41,12 @@ struct frame* frame_alloc(struct page *page) {
   unsigned i;
   lock_acquire(&frame_table_lock);
   for(i = 0; i < num_frames; i++) {
-    if (!frame_table[i]) {
-      struct frame* frame = malloc(sizeof(struct frame));
-      frame->page = page;
-      frame->pid = thread_current()->tid;
-      frame->base = palloc_get_page(PAL_USER | PAL_ZERO);
-      frame_table[i] = frame;
-      lock_init(&frame->lock);
+    if (!frame_table[i]->page) {
+      frame_table[i]->page = page;
+      frame_table[i]->pid = thread_current()->tid;
+      lock_init(&frame_table[i]->lock);
       lock_release(&frame_table_lock);
-      return frame;
+      return frame_table[i];
     }
   }
   lock_release(&frame_table_lock);
@@ -90,4 +92,8 @@ void frame_lock (struct page *p) {
 void frame_unlock(struct frame* f) {
   ASSERT(lock_held_by_current_thread(&f->lock))
   lock_release(&f->lock);
+}
+
+void frame_destroy() {
+  free(frame_table);
 }
