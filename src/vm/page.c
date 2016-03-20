@@ -93,7 +93,14 @@ bool page_into_memory (void *addr) {
   success = pagedir_set_page (thread_current()->pagedir, p->addr,
                               p->frame->base, !p->read_only);
 
+
   frame_unlock(p->frame);
+<<<<<<< HEAD
+=======
+
+
+
+>>>>>>> Rebased with swap-table
   return success;
 }
 
