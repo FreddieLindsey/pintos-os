@@ -71,12 +71,13 @@ bool page_into_memory (void *addr) {
     return false;
   }
 
-  frame_lock(p);
 
   if (p->frame == NULL) {
     /* Obtain a frame */
     p->frame = frame_alloc(p);
   }
+
+  frame_lock(p);
 
   if (p->sector != (block_sector_t) -1) {
        /* read from swap */
@@ -102,7 +103,7 @@ bool page_into_memory (void *addr) {
   success = pagedir_set_page (thread_current()->pagedir, p->addr,
                               p->frame->base, !p->read_only);
 
-  frame_unlock (p->frame);
+  frame_unlock(p->frame);
 
   return success;
 }
@@ -180,7 +181,6 @@ void page_destroy() {
   while(!list_empty(page_table)){
       e = list_pop_front(page_table);
       struct page *p = list_entry (e, struct page, elem);
-      frame_lock(p);
       if(p->frame) {
         frame_free(p->frame);
       }
