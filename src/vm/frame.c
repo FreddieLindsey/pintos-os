@@ -4,11 +4,11 @@
 #include "threads/palloc.h"
 
 
-static struct frame **frame_table;
+static struct frame **frame_table;     /* array storing the frame table */
 
-static struct lock frame_table_lock; /* lock for mutual exclusion */
+static struct lock frame_table_lock;   /* lock for mutual exclusion */
 
-static size_t num_frames;
+static size_t num_frames;              /* number of frames in the table */
 
 struct frame* select_frame(void);
 
