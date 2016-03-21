@@ -284,6 +284,9 @@ void close (int fd) {
 mapid_t mmap (int fd, void *addr) {
   /* Get corresponding file and its size */
   struct file *f = process_get_file(fd);
+  if(!f) {
+    return MAP_FAILED;
+  }
   off_t size = file_length(f);
   int num_pages = size / PGSIZE + 1;
 
