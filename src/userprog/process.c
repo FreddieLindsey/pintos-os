@@ -241,8 +241,6 @@ process_exit (void)
         munmap(fm->id);
       }
 
-
-
       /* Correct ordering here is crucial.  We must set
          cur->pagedir to NULL before switching page directories,
          so that a timer interrupt can't switch back to the
