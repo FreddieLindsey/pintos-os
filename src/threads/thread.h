@@ -147,11 +147,11 @@ struct tid_elem {
 
 /* List element for mapping files into virtual addresses */
 struct filemap_elem {
-  mapid_t id;
-  int fd;
-  void *addr;
-  int num_pages;
-  struct list_elem elem;
+  mapid_t id;                           /* Map ID of the mapping */
+  int fd;                               /* FD of the mapped file */
+  void *addr;                           /* Virtual address of mappping */
+  int num_pages;                        /* Number of pages mapped */
+  struct list_elem elem;                /* List element */
 };
 
 struct fd_elem {
