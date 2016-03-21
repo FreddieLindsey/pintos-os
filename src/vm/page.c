@@ -96,6 +96,17 @@ bool page_into_memory (void *addr) {
   return success;
 }
 
+void page_remove(void* addr) {
+
+  struct page* page = page_from_addr(addr);
+  if (!page) {
+    return;
+  }
+
+  list_remove(&page->elem);
+
+}
+
 /* destroys current process' page table */
 void page_destroy() {
   struct list *page_table = &thread_current()->page_table;
@@ -108,6 +119,7 @@ void page_destroy() {
       if(p->frame) {
         frame_free(p->frame);
       }
+      list_remove(&p->elem);
       free(p);
   }
 

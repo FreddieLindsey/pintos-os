@@ -17,7 +17,7 @@
 struct lock filesys_lock;
 
 static void syscall_handler (struct intr_frame *);
-static mapid_t insert_mapping(struct list *filemap, int fd, 
+static mapid_t insert_mapping(struct list *filemap, int fd,
                        void *addr, int num_pages);
 void read_args(void* esp, int num, void** args);
 void check_valid_ptr(void* ptr);
@@ -301,7 +301,6 @@ mapid_t mmap (int fd, void *addr) {
 
   /* Read a page at a time from the file until there is nothing more to read */
   int i;
-  off_t read = 0;
   for (i = 0; i < num_pages; ++i) {
     ///* Allocate a zeroed page to read the file into */
     //void *curr_page = palloc_get_page(PAL_USER & PAL_ZERO);
@@ -323,10 +322,6 @@ mapid_t mmap (int fd, void *addr) {
     curr_page->read_bytes = PGSIZE;
   }
 
-  /* File not fully read */
-  if (read != size) {
-    return MAP_FAILED;
-  }
 
   return insert_mapping(&thread_current()->filemap, fd, addr, num_pages);
 }
@@ -368,10 +363,11 @@ void munmap (mapid_t map) {
       file_write(f, kaddr, PGSIZE);
       try_release_filesys();
     }
-    /* Free the page */
-    //palloc_free_page(kaddr);
     /* Clear the address mapping in the page directory */
     pagedir_clear_page(pd, mapping->addr + i * PGSIZE);
+    /* Remove page from page table */
+    page_remove(mapping->addr + i * PGSIZE);
+
   }
   /* Remove mapping from the file map table */
   list_remove(&mapping->elem);
@@ -380,7 +376,7 @@ void munmap (mapid_t map) {
 
 /* Inserts the new mapping into the first available slot in the filemap,
    returning the index into which it is mapped as a mapid_t */
-static mapid_t insert_mapping(struct list *filemap, int fd, 
+static mapid_t insert_mapping(struct list *filemap, int fd,
                        void *addr, int num_pages) {
   /* Get the last element in the filemap */
   struct list_elem *back = list_rbegin(filemap);
