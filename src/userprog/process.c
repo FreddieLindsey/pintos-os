@@ -235,12 +235,14 @@ process_exit (void)
   if (pd != NULL)
     {
       /* Clean up the file map table */
-      struct list_elem *e;
-      for (e = list_begin (&cur->filemap); e != list_end (&cur->filemap);
-           e = list_next (e)) {
+      struct list_elem *e  = list_begin (&cur->filemap);
+      while(e != list_end(&cur->filemap)) {
         struct filemap_elem *fm = list_entry (e, struct filemap_elem, elem);
+        e = list_next(e);
         munmap(fm->id);
       }
+
+
 
       /* Correct ordering here is crucial.  We must set
          cur->pagedir to NULL before switching page directories,
@@ -253,6 +255,7 @@ process_exit (void)
       pagedir_activate (NULL);
       pagedir_destroy (pd);
     }
+
 
 }
 

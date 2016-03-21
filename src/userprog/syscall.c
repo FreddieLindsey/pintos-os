@@ -305,26 +305,21 @@ mapid_t mmap (int fd, void *addr) {
   /* Read a page at a time from the file until there is nothing more to read */
   int i;
   for (i = 0; i < num_pages; ++i) {
-    ///* Allocate a zeroed page to read the file into */
-    //void *curr_page = palloc_get_page(PAL_USER & PAL_ZERO);
-    ///* Read the file into the page, tracking the number of bytes read */
-    //try_acquire_filesys();
-    //read += file_read (f, curr_page, PGSIZE);
-    //try_release_filesys();
-    ///* Map the page into virtual memory at the appropriate address */
-    //if (!pagedir_set_page(pd, addr + i * PGSIZE, curr_page, true)) {
-    //  return MAP_FAILED;
-    //}
+
 
     struct page *curr_page = page_alloc(addr + i * PGSIZE, false);
     if (!curr_page) {
-      printf("null page\n");
+      int j;
+      for (j = 0; j < i; j++) {
+        page_remove(addr + j * PGSIZE);
+      }
+
+      return MAP_FAILED;
     }
     curr_page->file = f;
     curr_page->file_offset = i * PGSIZE;
     curr_page->read_bytes = PGSIZE;
   }
-
 
   return insert_mapping(&thread_current()->filemap, fd, addr, num_pages);
 }
@@ -332,6 +327,7 @@ mapid_t mmap (int fd, void *addr) {
 /* Unmaps mapped memory. */
 void munmap (mapid_t map) {
   /* Find the mapping in the file map table */
+
   struct thread *t = thread_current();
   struct list_elem *e;
   struct filemap_elem *mapping = NULL;
@@ -358,7 +354,8 @@ void munmap (mapid_t map) {
      its index in the page directory */
   int i;
   for (i = 0; i < mapping->num_pages; ++i) {
-    /* Get the kernal virtual address of the mapped file's address */
+
+    /* Get the kernel virtual address of the mapped file's address */
     void *kaddr = pagedir_get_page(pd, mapping->addr + i * PGSIZE);
     /* Write the page back to the file if it has been modified */
     if (pagedir_is_dirty(pd, mapping->addr + i * PGSIZE)) {
@@ -368,13 +365,17 @@ void munmap (mapid_t map) {
     }
     /* Clear the address mapping in the page directory */
     pagedir_clear_page(pd, mapping->addr + i * PGSIZE);
+
+
     /* Remove page from page table */
     page_remove(mapping->addr + i * PGSIZE);
 
   }
+
   /* Remove mapping from the file map table */
   list_remove(&mapping->elem);
   free(mapping);
+
 }
 
 /* Inserts the new mapping into the first available slot in the filemap,
