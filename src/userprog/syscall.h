@@ -4,7 +4,6 @@
 #include <stdbool.h>
 #include "userprog/process.h"
 
-
 void syscall_init (void);
 
 /* pid_t should be defined appropriately (for exec and wait) */
@@ -23,7 +22,10 @@ int write (int fd, const void *buffer, unsigned length);
 void seek (int fd, unsigned position);
 unsigned tell (int fd);
 void close (int fd);
+mapid_t mmap (int fd, void *data);
+void munmap (mapid_t map);
 void try_release_filesys();
+void try_acquire_filesys();
 
 
 #endif /* userprog/syscall.h */

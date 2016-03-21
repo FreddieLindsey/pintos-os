@@ -6,7 +6,6 @@
 #include <stdint.h>
 #include "synch.h"
 
-
 /* States in a thread's life cycle. */
 enum thread_status
   {
@@ -20,6 +19,10 @@ enum thread_status
    You can redefine this to whatever type you like. */
 typedef int tid_t;
 #define TID_ERROR ((tid_t) -1)          /* Error value for tid_t. */
+
+/* Map region identifier. */
+typedef int mapid_t;
+#define MAP_FAILED ((mapid_t) -1)
 
 /* Thread priorities. */
 #define PRI_MIN 0                       /* Lowest priority. */
@@ -113,14 +116,15 @@ struct thread
     /* Owned by userprog/process.c. */
     uint32_t *pagedir;                  /* Page directory. */
     struct list page_table;              /* Supplemental page table */
+    struct list filemap;                /* File mapping array */
     int process_init;                   /* Process initiated */
     char* proc_name;
     struct list fd_list;
     struct file* file;                  /* Executable associated file */
     struct semaphore exec_sema;         /* Controls sync in exec */
     struct semaphore wait_sema;
-    struct thread* parent;               /* Parent process */
     void *process_esp;
+    struct thread* parent;              /* Parent process */
 #endif
 
     /* Owned by thread.c. */
@@ -130,15 +134,24 @@ struct thread
 /* This is the struct describing a priority element in the priority
    stack in threads */
 struct priority_elem {
-  int priority;                        /* Actual priority value */
-  struct lock *lock;                   /* Lock for which needed to be acquired */
-  struct thread* t;                     /* Thread which received the donation */
+  int priority;                         /* Actual priority value */
+  struct lock *lock;                    /* Lock which needs to be acquired */
+  struct thread* t;                     /* Thread who received the donation */
   struct list_elem elem;
 };
 
 struct tid_elem {
-  tid_t tid;                         /* tid of thread */
+  tid_t tid;                            /* tid of thread */
   struct list_elem elem;
+};
+
+/* List element for mapping files into virtual addresses */
+struct filemap_elem {
+  mapid_t id;                           /* Map ID of the mapping */
+  int fd;                               /* FD of the mapped file */
+  void *addr;                           /* Virtual address of mappping */
+  int num_pages;                        /* Number of pages mapped */
+  struct list_elem elem;                /* List element */
 };
 
 struct fd_elem {

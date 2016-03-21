@@ -227,13 +227,22 @@ process_exit (void)
     file_allow_write(f);
   }
 
-  page_destroy();
 
   /* Destroy the current process's page directory and switch back
      to the kernel-only page directory. */
   pd = cur->pagedir;
   if (pd != NULL)
     {
+      /* Clean up the file map table */
+      struct list_elem *e  = list_begin (&cur->filemap);
+      while(e != list_end(&cur->filemap)) {
+        struct filemap_elem *fm = list_entry (e, struct filemap_elem, elem);
+        e = list_next(e);
+        munmap(fm->id);
+      }
+
+
+
       /* Correct ordering here is crucial.  We must set
          cur->pagedir to NULL before switching page directories,
          so that a timer interrupt can't switch back to the
@@ -244,7 +253,10 @@ process_exit (void)
       cur->pagedir = NULL;
       pagedir_activate (NULL);
       pagedir_destroy (pd);
+      page_destroy();
+
     }
+
 
 }
 
@@ -418,6 +430,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
   t->pagedir = pagedir_create ();
   /* Initialise page table */
   list_init(&t->page_table);
+  list_init(&t->filemap);
   t->process_init = 1; // Signal that the process has started
   if (t->pagedir == NULL)
     goto done;
