@@ -12,8 +12,12 @@
 struct page {
   void *addr; /* virtual address of page */
   bool read_only;
+  bool mapped;
+
 
   struct frame *frame; /* The frame that is associated with the page */
+  struct thread* thread;
+
 
   block_sector_t sector;
 
@@ -28,6 +32,7 @@ struct page {
 struct page* page_alloc(void *addr, bool read_only);
 struct page* page_from_addr(void *addr);
 bool page_into_memory (void *addr);
+bool page_out_memory (struct page* page);
 void page_destroy(void);
 void page_remove(void* addr);
 

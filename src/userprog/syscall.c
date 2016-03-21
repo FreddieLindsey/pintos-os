@@ -308,17 +308,20 @@ mapid_t mmap (int fd, void *addr) {
 
 
     struct page *curr_page = page_alloc(addr + i * PGSIZE, false);
+
+    /* If curr_page is null then it overlaps */
     if (!curr_page) {
       int j;
       for (j = 0; j < i; j++) {
         page_remove(addr + j * PGSIZE);
       }
-
       return MAP_FAILED;
     }
     curr_page->file = f;
     curr_page->file_offset = i * PGSIZE;
-    curr_page->read_bytes = PGSIZE;
+    curr_page->read_bytes = size >= PGSIZE ? PGSIZE : size;
+    curr_page->mapped = true;
+    size -= PGSIZE;
   }
 
   return insert_mapping(&thread_current()->filemap, fd, addr, num_pages);
@@ -327,7 +330,6 @@ mapid_t mmap (int fd, void *addr) {
 /* Unmaps mapped memory. */
 void munmap (mapid_t map) {
   /* Find the mapping in the file map table */
-
   struct thread *t = thread_current();
   struct list_elem *e;
   struct filemap_elem *mapping = NULL;
@@ -355,21 +357,14 @@ void munmap (mapid_t map) {
   int i;
   for (i = 0; i < mapping->num_pages; ++i) {
 
-    /* Get the kernel virtual address of the mapped file's address */
-    void *kaddr = pagedir_get_page(pd, mapping->addr + i * PGSIZE);
-    /* Write the page back to the file if it has been modified */
-    if (pagedir_is_dirty(pd, mapping->addr + i * PGSIZE)) {
-      try_acquire_filesys();
-      file_write(f, kaddr, PGSIZE);
-      try_release_filesys();
-    }
+    /* Get page associated with user address */
+    struct page* page = page_from_addr(mapping->addr + i * PGSIZE);
+
     /* Clear the address mapping in the page directory */
     pagedir_clear_page(pd, mapping->addr + i * PGSIZE);
 
-
     /* Remove page from page table */
     page_remove(mapping->addr + i * PGSIZE);
-
   }
 
   /* Remove mapping from the file map table */

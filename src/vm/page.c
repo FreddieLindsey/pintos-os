@@ -22,6 +22,8 @@ struct page* page_alloc(void *addr, bool read_only) {
   p->sector = (block_sector_t) -1;
   p->file = NULL;
   p->frame = NULL;
+  p->thread = thread_current();
+
 
   /* return NULL if page already exists associated with address */
   if (page_from_addr(addr)) {
@@ -97,11 +99,51 @@ bool page_into_memory (void *addr) {
   return success;
 }
 
+bool page_out_memory(struct page* page) {
+  ASSERT(page->frame);
+  bool modified;
+  bool success;
+
+  pagedir_clear_page(page->thread->pagedir, page->addr);
+
+  modified = pagedir_is_dirty(page->thread->pagedir, page->addr);
+  if(page->file) {
+    if (modified) {
+      if (!page->mapped) {
+        swap_alloc(page);
+        success = true;
+      } else {
+        success = file_write_at(page->file, page->frame->base, page->read_bytes, page->file_offset) == page->read_bytes;
+      }
+    } else {
+      success = true;
+    }
+  } else {
+    swap_alloc(page);
+    success = true;
+  }
+
+  if (success) {
+    page->frame = NULL;
+  }
+
+  return success;
+
+
+}
+
 void page_remove(void* addr) {
 
   struct page* page = page_from_addr(addr);
+
   if (!page) {
     return;
+  }
+
+  if (page->frame) {
+    if(page->file && page->mapped) {
+      page_out_memory(page);
+    }
   }
 
   list_remove(&page->elem);

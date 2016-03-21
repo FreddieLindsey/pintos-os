@@ -227,7 +227,6 @@ process_exit (void)
     file_allow_write(f);
   }
 
-  page_destroy();
 
   /* Destroy the current process's page directory and switch back
      to the kernel-only page directory. */
@@ -254,6 +253,8 @@ process_exit (void)
       cur->pagedir = NULL;
       pagedir_activate (NULL);
       pagedir_destroy (pd);
+      page_destroy();
+
     }
 
 
