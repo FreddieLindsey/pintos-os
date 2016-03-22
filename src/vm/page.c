@@ -71,6 +71,7 @@ bool page_into_memory (void *addr) {
     page->frame = frame_alloc(page);
   }
 
+  /* Locks the frame of the page for synchronization */
   frame_lock(page);
 
   if (page->sector != (block_sector_t) -1) {
