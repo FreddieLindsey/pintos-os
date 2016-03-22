@@ -12,8 +12,6 @@ static size_t num_frames;              /* number of frames in the table */
 
 struct frame* select_frame(void);
 
-struct frame* select_frame(void);
-
 void frame_init(int num_of_frames) {
   num_frames = 0;
   void * base;
@@ -67,15 +65,14 @@ struct frame* frame_alloc(struct page *page) {
 
 struct frame* select_frame() {
   return frame_table[0];
+  
 }
 
-void frame_free(struct frame *f) {
+void frame_release(struct frame *f) {
   if (!f) {
     return;
   }
-  palloc_free_page(f->base);
-  free(f);
-
+  f->page = NULL;
 }
 
 void frame_lock (struct page *p) {
