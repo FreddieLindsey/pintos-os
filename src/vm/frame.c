@@ -53,12 +53,14 @@ struct frame* frame_alloc(struct page *page) {
   /* Select frame to evict */
   struct frame* frame = select_frame();
   /* Attempt to move page from memory */
+  frame_lock(frame->page);
   if(!page_out_memory(frame->page)) {
     frame_unlock(frame);
     return NULL;
   }
 
   frame->page = page;
+  frame_unlock(frame);
   return frame;
 }
 
