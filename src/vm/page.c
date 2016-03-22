@@ -68,12 +68,13 @@ bool page_into_memory (void *addr) {
     return false;
   }
 
-  frame_lock(p);
 
   if (p->frame == NULL) {
     /* Obtain a frame */
     p->frame = frame_alloc(p);
   }
+
+  frame_lock(p);
 
   if (p->sector != (block_sector_t) -1) {
        /* read from swap */
@@ -94,9 +95,24 @@ bool page_into_memory (void *addr) {
   success = pagedir_set_page (thread_current()->pagedir, p->addr,
                               p->frame->base, !p->read_only);
 
+
   frame_unlock (p->frame);
 
   return success;
+}
+
+/* Checks if page has been recently accessed sets bit to 0 if it has */
+bool page_accessed_recently(struct page* page) {
+  struct thread *t = page->thread;
+  bool accessed = pagedir_is_accessed(t->pagedir, page->addr);
+  if (accessed) {
+    pagedir_set_accessed(t->pagedir, page->addr, false);
+    if (page->frame) {
+      pagedir_set_accessed(t->pagedir, page->frame->base, false);
+    }
+  }
+
+  return accessed;
 }
 
 bool page_out_memory(struct page* page) {
@@ -133,7 +149,6 @@ bool page_out_memory(struct page* page) {
 }
 
 void page_remove(void* addr) {
-
   struct page* page = page_from_addr(addr);
 
   if (!page) {
@@ -158,10 +173,6 @@ void page_destroy() {
   while(!list_empty(page_table)){
       e = list_pop_front(page_table);
       struct page *p = list_entry (e, struct page, elem);
-      frame_lock(p);
-      if(p->frame) {
-        frame_free(p->frame);
-      }
       list_remove(&p->elem);
       free(p);
   }

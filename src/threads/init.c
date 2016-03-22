@@ -135,7 +135,7 @@ main (void)
 #endif
 
 #ifdef VM
-  frame_init(user_page_limit);
+  frame_init(init_ram_pages);
   swap_init();
 #endif
 
@@ -145,6 +145,7 @@ main (void)
   run_actions (argv);
 
   /* Finish up. */
+  frame_destroy();
   shutdown ();
   thread_exit ();
 }
