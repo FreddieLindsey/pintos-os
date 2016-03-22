@@ -84,7 +84,7 @@ void swap_alloc(struct page *page) {
    for (i = 0; i < n_page_sectors; i++ ) {
      block_read(swap_space,
                 swap_entry->slot + i,
-                page->frame->base + i * BLOCK_SECTOR_SIZE);
+                page->frame->addr + i * BLOCK_SECTOR_SIZE);
    }
    page->sector = (block_sector_t) -1;
 

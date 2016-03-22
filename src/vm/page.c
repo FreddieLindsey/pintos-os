@@ -8,7 +8,7 @@
 #include "userprog/pagedir.h"
 #include "threads/vaddr.h"
 
-/* Add a mapping from VADDR to page. Fails if mapping already exists. */
+/* Add a mapping from the addr to a page. Fails if mapping already exists. */
 struct page* page_alloc(void *addr, bool read_only) {
   struct thread *t = thread_current();
   if (&t->page_table == NULL) {
@@ -53,9 +53,6 @@ struct page* page_from_addr(void *addr) {
 
 /* Loads page into memory */
 bool page_into_memory (void *addr) {
-  struct page *p;
-  bool success;
-
   addr = pg_round_down(addr);
 
   /* Locate page that faulted in supplemental page table */
@@ -63,41 +60,40 @@ bool page_into_memory (void *addr) {
     return false;
   }
 
-  p = page_from_addr(addr);
-  if (!p) {
+  struct page *page = page_from_addr(addr);
+  if (!page) {
     return false;
   }
 
 
-  if (p->frame == NULL) {
-    /* Obtain a frame */
-    p->frame = frame_alloc(p);
+  if (!page->frame) {
+    /* Obtain a frame for page */
+    page->frame = frame_alloc(page);
   }
 
-  frame_lock(p);
+  frame_lock(page);
 
-  if (p->sector != (block_sector_t) -1) {
+  if (page->sector != (block_sector_t) -1) {
        /* read from swap */
-       swap_free(p);
-  } else if (p->file != NULL) {
-      /* read from file */
-      off_t read_bytes = file_read_at(p->file, p->frame->base,  p->read_bytes, p->file_offset);
-      off_t zero_bytes = PGSIZE - read_bytes;
+       swap_free(page);
+  } else if (page->file) {
+      /* read data from file */
+      off_t bytes_read = file_read_at(page->file, page->frame->addr, page->read_bytes,
+                                      page->file_offset);
+      off_t zero_bytes = PGSIZE - bytes_read;
       /* sets rest of frame to 0 */
-      memset(p->frame->base + read_bytes, 0, zero_bytes);
+      memset(page->frame->addr + bytes_read, 0, zero_bytes);
   } else {
       /* zero page */
-      memset(p->frame->base, 0, PGSIZE);
+      memset(page->frame->addr, 0, PGSIZE);
   }
 
 
-  /* Point the page table entry for the faulting virtual address to the frame */
-  success = pagedir_set_page (thread_current()->pagedir, p->addr,
-                              p->frame->base, !p->read_only);
+  /* Point the points the page for the faulting virtual address to the frame */
+  bool success = pagedir_set_page(thread_current()->pagedir, page->addr,
+                              page->frame->addr, !page->read_only);
 
-
-  frame_unlock (p->frame);
-
+  lock_release(&page->frame->lock);
   return success;
 }
 
@@ -108,7 +104,7 @@ bool page_accessed_recently(struct page* page) {
   if (accessed) {
     pagedir_set_accessed(t->pagedir, page->addr, false);
     if (page->frame) {
-      pagedir_set_accessed(t->pagedir, page->frame->base, false);
+      pagedir_set_accessed(t->pagedir, page->frame->addr, false);
     }
   }
 
@@ -116,36 +112,38 @@ bool page_accessed_recently(struct page* page) {
 }
 
 bool page_out_memory(struct page* page) {
-  ASSERT(page->frame);
-  bool modified;
   bool success;
 
+  /* Have to clear the page associated with the virtual address */
   pagedir_clear_page(page->thread->pagedir, page->addr);
 
-  modified = pagedir_is_dirty(page->thread->pagedir, page->addr);
   if(page->file) {
-    if (modified) {
-      if (!page->mapped) {
+    if (pagedir_is_dirty(page->thread->pagedir, page->addr)) {
+      if (page->mapped) {
+        off_t bytes_written = file_write_at(page->file, page->frame->addr,
+                              page->read_bytes, page->file_offset);
+        /* Has to have written all of the bytes to be successful */
+        success = bytes_written == page->read_bytes;
+      } else {
         swap_alloc(page);
         success = true;
-      } else {
-        success = file_write_at(page->file, page->frame->base, page->read_bytes, page->file_offset) == page->read_bytes;
+
       }
     } else {
       success = true;
     }
   } else {
+    /* Have to write to swap space */
     swap_alloc(page);
     success = true;
   }
 
+  /* If writing was successful then page does not hold frame anymore */
   if (success) {
     page->frame = NULL;
   }
 
   return success;
-
-
 }
 
 void page_remove(void* addr) {
@@ -156,13 +154,14 @@ void page_remove(void* addr) {
   }
 
   if (page->frame) {
-    if(page->file && page->mapped) {
+    /* If it was a mmapped file, then evict properly */
+    if(page->mapped && page->file) {
       page_out_memory(page);
     }
+    frame_release(page->frame);
   }
-
   list_remove(&page->elem);
-
+  free(page);
 }
 
 /* destroys current process' page table */
