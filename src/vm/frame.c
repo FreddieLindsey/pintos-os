@@ -64,8 +64,22 @@ struct frame* frame_alloc(struct page *page) {
 
 
 struct frame* select_frame() {
+  int i = 0;
+  for (; i < num_frames * 2; i++) {
+    struct frame *f = frame_table[i%num_frames];
+    if (!lock_try_acquire(&f->lock)) {
+      continue;
+    }
+
+    if (f->page) {
+      if (!page_accessed_recently(f->page)) {
+        frame_unlock(f);
+        return f;
+      }
+    }
+  }
   return frame_table[0];
-  
+
 }
 
 void frame_release(struct frame *f) {

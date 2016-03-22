@@ -101,6 +101,19 @@ bool page_into_memory (void *addr) {
   return success;
 }
 
+/* Checks if page has been recently accessed sets bit to 0 if it has */
+bool page_accessed_recently(struct page* page) {
+  bool accessed = pagedir_is_accessed(&thread_current()->pagedir, page->addr);
+  if (accessed) {
+    pagedir_set_accessed(&thread_current()->pagedir, page->addr, false);
+    if (page->frame) {
+      pagedir_set_accessed(&thread_current()->pagedir, page->frame->base, false);
+    }
+  }
+
+  return accessed;
+}
+
 bool page_out_memory(struct page* page) {
   ASSERT(page->frame);
   bool modified;

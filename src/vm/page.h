@@ -34,5 +34,6 @@ bool page_into_memory (void *addr);
 bool page_out_memory(struct page* page);
 void page_destroy(void);
 void page_remove(void* addr);
+bool page_accessed_recently(struct page* page);
 
 #endif
