@@ -635,6 +635,7 @@ setup_stack (void **esp)
 {
   bool success = false;
 
+  /* Allocates page for stack */
   struct page* page = page_alloc(((uint8_t *) PHYS_BASE) - PGSIZE, false);
 
   if(page)
@@ -642,12 +643,12 @@ setup_stack (void **esp)
       page->frame = frame_alloc(page);
       if(page->frame) {
         frame_lock(page);
-          success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, page->frame->base, true);
+          success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, page->frame->addr, true);
 
           if (success)
             *esp = PHYS_BASE - 12;
 
-        frame_unlock(page->frame);
+        lock_release(&page->frame->lock);
       }
     }
   return success;

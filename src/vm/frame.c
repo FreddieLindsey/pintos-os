@@ -14,15 +14,14 @@ struct frame* select_frame(void);
 
 void frame_init(int num_of_frames) {
   num_frames = 0;
-  void * base;
+  void * addr;
 
   frame_table = malloc(sizeof(struct frame*)*num_of_frames);
-  if (!frame_table) {
-    PANIC ("out of memory to allocated frame table");
-  }
-  while((base = palloc_get_page(PAL_USER | PAL_ZERO))!= NULL) {
+  
+  /* Keeps trying to allocate pages until it runs out */
+  while((addr = palloc_get_page(PAL_USER | PAL_ZERO))) {
     frame_table[num_frames] = malloc(sizeof(struct frame));
-    frame_table[num_frames]->base = base;
+    frame_table[num_frames]->addr = addr;
     frame_table[num_frames]->page = NULL;
     lock_init(&frame_table[num_frames]->lock);
     num_frames++;
@@ -55,12 +54,12 @@ struct frame* frame_alloc(struct page *page) {
   /* Attempt to move page from memory */
   frame_lock(frame->page);
   if(!page_out_memory(frame->page)) {
-    frame_unlock(frame);
+    lock_release(&frame->lock);
     return NULL;
   }
 
   frame->page = page;
-  frame_unlock(frame);
+  lock_release(&frame->lock);
   return frame;
 }
 
@@ -68,46 +67,40 @@ struct frame* frame_alloc(struct page *page) {
 struct frame* select_frame() {
   int i = 0;
   for (; i < num_frames * 2; i++) {
-    struct frame *f = frame_table[i%num_frames];
-    if (!lock_try_acquire(&f->lock)) {
+    struct frame *frame = frame_table[i%num_frames];
+    if (!lock_try_acquire(&frame->lock)) {
       continue;
     }
 
-    if (f->page) {
-      if (!page_accessed_recently(f->page)) {
-        frame_unlock(f);
-        return f;
+    if (frame->page) {
+      /* Second chance */
+      if (!page_accessed_recently(frame->page)) {
+        lock_release(&frame->lock);
+        return frame;
       }
     }
   }
-  return frame_table[0];
+  return NULL;
 
 }
 
-void frame_release(struct frame *f) {
-  if (!f) {
+/* Releases page from frame frame */
+void frame_release(struct frame *frame) {
+  if (!frame) {
     return;
   }
-  f->page = NULL;
+  frame->page = NULL;
 }
 
-void frame_lock (struct page *p) {
-  struct frame *f = p->frame;
-  if (f != NULL)
+/* Acquires the lock of the frame associated with the page */
+void frame_lock (struct page *page) {
+  if (page->frame)
     {
-      lock_acquire (&f->lock);
-      if (f != p->frame)
-        {
-          lock_release (&f->lock);
-        }
+      lock_acquire (&page->frame->lock);
     }
 }
 
-void frame_unlock(struct frame* f) {
-  ASSERT(lock_held_by_current_thread(&f->lock))
-  lock_release(&f->lock);
-}
-
+/* Destroys frame_table */
 void frame_destroy() {
   free(frame_table);
 }

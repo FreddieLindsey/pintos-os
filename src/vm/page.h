@@ -11,9 +11,8 @@
 
 struct page {
   void *addr; /* virtual address of page */
-  bool read_only;
   bool mapped;
-
+  bool read_only;
 
   struct frame *frame; /* The frame that is associated with the page */
   struct thread* thread;

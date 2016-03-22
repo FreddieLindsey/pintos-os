@@ -157,10 +157,11 @@ page_fault (struct intr_frame *f)
       thread_current()->process_esp = f->esp;
     }
 
+    /* If it looks like a stack access, grow stack */
     if (fault_addr >= PHYS_BASE - MAX_STACK && fault_addr >= thread_current()->process_esp - 32) {
       page_alloc(fault_addr, false);
     }
-
+    /* If loading page into memory did not work, cannot go further so exit */
     if (!page_into_memory(fault_addr)) {
       exit(-1);
     }

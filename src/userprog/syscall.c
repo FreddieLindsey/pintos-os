@@ -292,7 +292,7 @@ mapid_t mmap (int fd, void *addr) {
   /* Determine the number of pages needed */
   int num_pages = size / PGSIZE + 1;
 
-  /* Fail if the file has a lenght of zero, if the address is not page 
+  /* Fail if the file has a lenght of zero, if the address is not page
      aligned, if the address is 0, or if the file descriptor is 0 or 1 */
   bool page_aligned = (int) addr % PGSIZE == 0;
   if (!page_aligned || size == 0 || addr == 0 || fd == 0 || fd == 1) {
