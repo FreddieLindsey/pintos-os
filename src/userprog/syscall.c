@@ -288,22 +288,29 @@ mapid_t mmap (int fd, void *addr) {
     return MAP_FAILED;
   }
   off_t size = file_length(f);
-  int num_pages = size / PGSIZE + 1;
 
-  // TODO: fail if pages already mapped
+  /* Determine the number of pages needed */
+  double n = size / PGSIZE;
+  int num_pages = (int) n;
+  /* Round up */
+  if (n > num_pages) {
+    num_pages += 1;
+  }
+
+  /* Fail if the file has a lenght of zero, if the address is not page 
+     aligned, if the address is 0, or if the file descriptor is 0 or 1 */
   bool page_aligned = (int) addr % PGSIZE == 0;
   if (!page_aligned || size == 0 || addr == 0 || fd == 0 || fd == 1) {
     return MAP_FAILED;
   }
 
-  /* Get current process's page table */
-  uint32_t *pd = thread_current()->pagedir;
-  if (!pd) {
-    return MAP_FAILED;
+  /* Check if new mapping will overlap existing memory, in which case fail */
+  int i;
+  for (i = 0; i < num_pages; ++i) {
+    if (page_from_addr(addr + i * PGSIZE)) return MAP_FAILED;
   }
 
   /* Read a page at a time from the file until there is nothing more to read */
-  int i;
   for (i = 0; i < num_pages; ++i) {
 
 
@@ -350,16 +357,10 @@ void munmap (mapid_t map) {
   if (!pd) {
     return;
   }
-  /* Get the file corresponding to the mapping */
-  struct file *f = process_get_file(mapping->fd);
   /* Write each page back to the file if required, and remove the page and
      its index in the page directory */
   int i;
   for (i = 0; i < mapping->num_pages; ++i) {
-
-    /* Get page associated with user address */
-    struct page* page = page_from_addr(mapping->addr + i * PGSIZE);
-
     /* Clear the address mapping in the page directory */
     pagedir_clear_page(pd, mapping->addr + i * PGSIZE);
 
