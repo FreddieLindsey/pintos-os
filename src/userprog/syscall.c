@@ -290,12 +290,7 @@ mapid_t mmap (int fd, void *addr) {
   off_t size = file_length(f);
 
   /* Determine the number of pages needed */
-  double n = size / PGSIZE;
-  int num_pages = (int) n;
-  /* Round up */
-  if (n > num_pages) {
-    num_pages += 1;
-  }
+  int num_pages = size / PGSIZE + 1;
 
   /* Fail if the file has a lenght of zero, if the address is not page 
      aligned, if the address is 0, or if the file descriptor is 0 or 1 */
